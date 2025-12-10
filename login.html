@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KARAT — Вход</title>
+
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: #f6f6f6;
+    padding: 20px;
+    text-align: center;
+  }
+  input {
+    padding: 12px;
+    font-size: 18px;
+    width: 80%;
+    max-width: 300px;
+    margin-bottom: 15px;
+    border-radius: 8px;
+    border: 1px solid #888;
+  }
+  button {
+    padding: 12px 20px;
+    font-size: 18px;
+    border-radius: 8px;
+    border: none;
+    background: #333;
+    color: #fff;
+    cursor: pointer;
+  }
+  button:hover {
+    background: #555;
+  }
+  .error {
+    margin-top: 15px;
+    color: red;
+    font-weight: bold;
+  }
+</style>
+</head>
+
+<body>
+
+<h2>Вход для тренеров</h2>
+
+<input id="phone" type="tel" placeholder="Введите номер телефона">
+
+<br>
+<button onclick="login()">Войти</button>
+
+<div class="error" id="error"></div>
+
+<script>
+const API = "https://script.google.com/macros/s/AKfycbydYQAoOMHlIAEZIsSUu3sNALYsltItXaBrc6qYHkUdmRvbfgIAutkhgV1Yowpw46WmFg/exec"; // вставь свой ID
+
+async function login() {
+    const phone = document.getElementById("phone").value.trim();
+    if (!phone) {
+        document.getElementById("error").innerText = "Введите номер";
+        return;
+    }
+
+    try {
+        const res = await fetch(`${API}?login=1&phone=${phone}`);
+        const data = await res.json();
+
+        if (!data.found) {
+            document.getElementById("error").innerText = "Тренер не найден";
+            return;
+        }
+
+        // Сохраняем trainer_id
+        localStorage.setItem("trainer_id", data.trainer_id);
+
+        // Переход в меню
+        window.location.href = "index.html";
+
+    } catch (err) {
+        document.getElementById("error").innerText = "Ошибка соединения";
+    }
+}
+</script>
+
+</body>
+</html>
