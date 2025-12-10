@@ -16,14 +16,6 @@
       text-align: center;
     }
 
-<script>
-  // Проверяем, авторизован ли тренер
-  const trainerId = localStorage.getItem('trainer_id');
-  if (!trainerId) {
-      // Если нет авторизации → отправляем на логин
-      window.location.href = "login.html";
-  }
-</script>
 
     
     h1 {
@@ -56,6 +48,24 @@
 </head>
 
 <body>
+
+<script>
+  const trainerId = localStorage.getItem("trainer_id");
+  if (!trainerId) {
+      window.location.href = "login.html";
+  }
+</script>
+
+  <script>
+  // Проверяем, авторизован ли тренер
+  const trainerId = localStorage.getItem('trainer_id');
+  if (!trainerId) {
+      // Если нет авторизации → отправляем на логин
+      window.location.href = "login.html";
+  }
+</script>
+
+  
   <h1>Меню тренера</h1>
 
  <div class="menu">
