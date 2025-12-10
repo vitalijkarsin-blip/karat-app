@@ -1,11 +1,10 @@
-
 <!DOCTYPE html>
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>KARAT — Меню тренера</title>
-<link rel="manifest" href="manifest.json">
+  <link rel="manifest" href="manifest.json">
 
   <style>
     body {
@@ -16,8 +15,6 @@
       text-align: center;
     }
 
-
-    
     h1 {
       margin-bottom: 30px;
     }
@@ -39,6 +36,8 @@
       font-weight: bold;
       cursor: pointer;
       transition: 0.2s;
+      text-decoration: none;
+      color: #000;
     }
 
     .btn:hover {
@@ -49,18 +48,17 @@
 
 <body>
 
+<!-- 🔥 Правильная проверка авторизации -->
 <script>
-  // Проверяем наличие объекта тренера
   const trainerData = localStorage.getItem("trainer");
   if (!trainerData) {
       window.location.href = "login.html";
   }
 </script>
 
-  
-  <h1>Меню тренера</h1>
+<h1>Меню тренера</h1>
 
-  <div class="menu">
+<div class="menu">
 
   <!-- Блок 1: Месяца и журнал -->
   <a class="btn" href="current.html">📘 Текущий месяц</a>
@@ -70,7 +68,7 @@
   <!-- Блок 2: Финансы -->
   <a class="btn" href="salary.html">💰 Зарплата за месяц</a>
 
-  <!-- Блок 3: Формы (раскрывашка) -->
+  <!-- Блок 3: Формы -->
   <a class="btn" href="forms.html">📝 Формы и отчёты</a>
 
   <!-- Блок 4: Информация -->
@@ -81,19 +79,23 @@
   <!-- Блок 5: Связь -->
   <a class="btn" href="contact.html">❓ Связаться с администратором</a>
 
-    <a class="btn" href="exit.html"> Выйти</a>
+  <!-- Выход -->
+  <button class="btn" onclick="logout()">🚪 Выйти</button>
 
 </div>
 
-
-  <script>
+<script>
+  // Service Worker
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js');
   }
+
+  // Функция выхода
+  function logout() {
+    localStorage.clear();
+    window.location.href = "login.html";
+  }
 </script>
 
-
-
-  
 </body>
 </html>
