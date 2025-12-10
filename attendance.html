@@ -4,17 +4,58 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Журнал посещаемости</title>
+
   <style>
-    body { font-family: Arial, sans-serif; padding: 20px; }
-    a { text-decoration: none; display: inline-block; margin-bottom: 20px; font-size: 18px; }
+    body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
+    iframe {
+      width: 100%;
+      height: 100vh;
+      border: none;
+    }
+    .loading {
+      text-align: center;
+      margin-top: 30px;
+      font-size: 20px;
+    }
   </style>
 </head>
+
 <body>
 
-<a href="index.html">⬅ Назад в меню</a>
+<div class="loading">Загрузка журнала...</div>
+<iframe id="journalFrame" style="display:none;"></iframe>
 
-<h1>Журнал посещаемости</h1>
-<p>Здесь позже будет подключение Google Sheets.</p>
+<script>
+const API_URL = "https://script.google.com/macros/s/ТВОЙ_ID/exec"; // ← заменяем
+
+const trainerId = localStorage.getItem("trainer_id");
+if (!trainerId) {
+    window.location.href = "login.html";
+}
+
+async function loadJournal() {
+    try {
+        const res = await fetch(`${API_URL}?months=1&trainer_id=${trainerId}`);
+        const data = await res.json();
+
+        if (!data.ok || !data.journal) {
+            document.querySelector('.loading').innerText = "Ошибка загрузки журнала";
+            return;
+        }
+
+        const url = data.journal.url;
+
+        document.getElementById("journalFrame").src = url;
+        document.getElementById("journalFrame").style.display = "block";
+        document.querySelector('.loading').style.display = 'none';
+
+    } catch (e) {
+        document.querySelector('.loading').innerText = "Ошибка соединения";
+    }
+}
+
+loadJournal();
+</script>
 
 </body>
 </html>
