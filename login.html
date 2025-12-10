@@ -50,67 +50,46 @@
 <br>
 <button id="loginBtn">Войти</button>
 
-function login() {
-    const phone = document.getElementById("phone").value;
-    if (!phone) {
-        alert("Введите номер");
-        return;
-    }
-
-    fetch(`${API}?login=1&phone=${encodeURIComponent(phone)}`)
-        .then(r => r.json())
-        .then(data => {
-            console.log(data);
-            if (!data.ok || !data.found) {
-                alert("Тренер не найден");
-                return;
-            }
-
-            localStorage.setItem("trainer", JSON.stringify(data));
-            window.location.href = "index.html";
-        })
-        .catch(err => {
-            console.error(err);
-            alert("Ошибка соединения");
-        });
-}
-
-
-  
 <div class="error" id="error"></div>
 
 <script>
-const API = "https://script.google.com/macros/s/AKfycbydYQAoOMHlIAEZIsSUu3sNALYsltItXaBrc6qYHkUdmRvbfgIAutkhgV1Yowpw46WmFg/exec"; // ← ВСТАВЬ СВОЙ
+const API = "https://script.google.com/macros/s/AKfycbydYQAoOMHlIAEZIsSUu3sNALYsltItXaBrc6qYHkUdmRvbfgIAutkhgV1Yowpw46WmFg/exec";
 
-// Определяем функцию ГЛОБАЛЬНО
+// --- Функция авторизации ---
 async function login() {
     const phone = document.getElementById("phone").value.trim();
+    const errorBox = document.getElementById("error");
+    errorBox.innerText = ""; // очистить ошибку
+
     if (!phone) {
-        document.getElementById("error").innerText = "Введите номер";
+        errorBox.innerText = "Введите номер";
         return;
     }
 
     try {
-        const res = await fetch(`${API}?login=1&phone=${phone}`);
+        const res = await fetch(`${API}?login=1&phone=${encodeURIComponent(phone)}`);
         const data = await res.json();
 
+        console.log("Ответ API:", data);
+
         if (!data.ok || !data.found) {
-            document.getElementById("error").innerText = "Неверный номер";
+            errorBox.innerText = "Неверный номер";
             return;
         }
 
         // Сохраняем данные тренера
         localStorage.setItem("trainer", JSON.stringify(data));
 
-        // Переходим в меню
+        // Переход в меню
         window.location.href = "index.html";
 
     } catch (err) {
-        document.getElementById("error").innerText = "Ошибка соединения";
+        console.error(err);
+        errorBox.innerText = "Ошибка соединения";
     }
 }
 
-// Привязка кнопки после загрузки
+// --- Привязываем кнопку ---
 document.getElementById("loginBtn").addEventListener("click", login);
 </script>
 
