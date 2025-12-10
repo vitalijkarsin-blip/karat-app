@@ -16,6 +16,16 @@
       text-align: center;
     }
 
+<script>
+  // Проверяем, авторизован ли тренер
+  const trainerId = localStorage.getItem('trainer_id');
+  if (!trainerId) {
+      // Если нет авторизации → отправляем на логин
+      window.location.href = "login.html";
+  }
+</script>
+
+    
     h1 {
       margin-bottom: 30px;
     }
