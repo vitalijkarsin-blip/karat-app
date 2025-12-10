@@ -50,17 +50,9 @@
 <body>
 
 <script>
-  const trainerId = localStorage.getItem("trainer_id");
-  if (!trainerId) {
-      window.location.href = "login.html";
-  }
-</script>
-
-  <script>
-  // Проверяем, авторизован ли тренер
-  const trainerId = localStorage.getItem('trainer_id');
-  if (!trainerId) {
-      // Если нет авторизации → отправляем на логин
+  // Проверяем наличие объекта тренера
+  const trainerData = localStorage.getItem("trainer");
+  if (!trainerData) {
       window.location.href = "login.html";
   }
 </script>
