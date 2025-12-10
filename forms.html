@@ -75,25 +75,43 @@
 
   
 <div class="menu">
-  <a id="formAttendance" class="btn" target="_blank">Форма посещаемости</a>
-  <a id="formSalary" class="btn" target="_blank">Форма оплаты</a>
-  <a id="formDelete" class="btn" target="_blank">Удалить ученика</a>
-  <a id="formOrder" class="btn" target="_blank">Форма заказа товаров</a>
+  <a id="form_attendance" class="btn" href="#">Форма посещаемости</a>
+<a id="form_salary" class="btn" href="#">Форма оплаты</a>
+<a id="form_delete" class="btn" href="#">Удалить ученика</a>
+<a id="form_order" class="btn" href="#">Форма заказа товаров</a>
+
 </div>
 
 <script>
-  // Достаём ссылки форм, сохранённые после авторизации
-  const formAttendance = localStorage.getItem("form_attendance");
-  const formSalary     = localStorage.getItem("form_salary");
-  const formDelete     = localStorage.getItem("form_delete");
-  const formOrder      = localStorage.getItem("form_order");
+document.addEventListener("DOMContentLoaded", function () {
+    const trainer = JSON.parse(localStorage.getItem("trainer"));
+    
+    if (!trainer) {
+        alert("Ошибка: данные тренера не найдены. Выполните вход заново.");
+        window.location.href = "index.html";
+        return;
+    }
 
-  // Подставляем
-  document.getElementById("formAttendance").href = formAttendance || "#";
-  document.getElementById("formSalary").href     = formSalary     || "#";
-  document.getElementById("formDelete").href     = formDelete     || "#";
-  document.getElementById("formOrder").href      = formOrder      || "#";
+    // ссылки
+    const attendance = trainer.form_attendance;
+    const salary     = trainer.form_salary;
+    const del        = trainer.form_delete;
+    const order      = trainer.form_order;
+
+    // подставляем
+    document.getElementById("form_attendance").href = attendance || "#";
+    document.getElementById("form_salary").href     = salary || "#";
+    document.getElementById("form_delete").href     = del || "#";
+    document.getElementById("form_order").href      = order || "#";
+
+    // проверка отсутствующих ссылок
+    if (!attendance || !salary || !del || !order) {
+        console.warn("⚠️ Внимание: в тренере есть пустые ссылки форм.");
+        console.log(trainer);
+    }
+});
 </script>
+
 
 </body>
 </html>
