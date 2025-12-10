@@ -50,6 +50,33 @@
 <br>
 <button id="loginBtn">Войти</button>
 
+function login() {
+    const phone = document.getElementById("phone").value;
+    if (!phone) {
+        alert("Введите номер");
+        return;
+    }
+
+    fetch(`${API}?login=1&phone=${encodeURIComponent(phone)}`)
+        .then(r => r.json())
+        .then(data => {
+            console.log(data);
+            if (!data.ok || !data.found) {
+                alert("Тренер не найден");
+                return;
+            }
+
+            localStorage.setItem("trainer", JSON.stringify(data));
+            window.location.href = "index.html";
+        })
+        .catch(err => {
+            console.error(err);
+            alert("Ошибка соединения");
+        });
+}
+
+
+  
 <div class="error" id="error"></div>
 
 <script>
