@@ -71,14 +71,12 @@ async function login() {
     return;
 }
 
-// Сохраняем данные тренера
-localStorage.setItem("trainer_id",      data.trainer_id);
-localStorage.setItem("form_salary",     data.form_salary);
-localStorage.setItem("form_attendance", data.form_attendance);
-localStorage.setItem("form_delete",     data.form_delete);
-localStorage.setItem("form_order",      data.form_order);
+// сохраняем весь объект тренера
+localStorage.setItem("trainer", JSON.stringify(data));
 
+// Переход в меню
 window.location.href = "index.html";
+
 
 
     } catch (err) {
