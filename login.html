@@ -48,14 +48,44 @@
 <input id="phone" type="tel" placeholder="Введите номер телефона">
 
 <br>
-<button onclick="login()">Войти</button>
+<button id="loginBtn">Войти</button>
 
 <div class="error" id="error"></div>
 
 <script>
-const API = "https://script.google.com/macros/s/AKfycbydYQAoOMHlIAEZIsSUu3sNALYsltItXaBrc6qYHkUdmRvbfgIAutkhgV1Yowpw46WmFg/exec"; // ← ВСТАВЬ СВОЙ DEPLOY URL
+const API = "https://script.google.com/macros/s/ТВОЙ_ID/exec"; // ← ВСТАВЬ СВОЙ
 
+// Определяем функцию ГЛОБАЛЬНО
 async function login() {
     const phone = document.getElementById("phone").value.trim();
     if (!phone) {
-        document.getElementById("err
+        document.getElementById("error").innerText = "Введите номер";
+        return;
+    }
+
+    try {
+        const res = await fetch(`${API}?login=1&phone=${phone}`);
+        const data = await res.json();
+
+        if (!data.ok || !data.found) {
+            document.getElementById("error").innerText = "Неверный номер";
+            return;
+        }
+
+        // Сохраняем данные тренера
+        localStorage.setItem("trainer", JSON.stringify(data));
+
+        // Переходим в меню
+        window.location.href = "index.html";
+
+    } catch (err) {
+        document.getElementById("error").innerText = "Ошибка соединения";
+    }
+}
+
+// Привязка кнопки после загрузки
+document.getElementById("loginBtn").addEventListener("click", login);
+</script>
+
+</body>
+</html>
