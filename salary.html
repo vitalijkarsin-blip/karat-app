@@ -1,20 +1,88 @@
+
 <!DOCTYPE html>
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Зарплата тренера</title>
+
   <style>
-    body { font-family: Arial, sans-serif; padding: 20px; }
-    a { text-decoration: none; display: inline-block; margin-bottom: 20px; font-size: 18px; }
+    body {
+      font-family: Arial, sans-serif;
+      background: #f6f6f6;
+      padding: 20px;
+      text-align: center;
+    }
+
+    h2 {
+      margin-bottom: 20px;
+    }
+
+    .card {
+      background: #fff;
+      padding: 20px;
+      border-radius: 12px;
+      border: 2px solid #333;
+      max-width: 350px;
+      margin: 0 auto;
+      font-size: 18px;
+    }
+
+    .item {
+      margin: 10px 0;
+      font-weight: bold;
+    }
+
+    .loading {
+      margin-top: 30px;
+      font-size: 20px;
+    }
   </style>
 </head>
+
 <body>
 
-<a href="index.html">⬅ Назад в меню</a>
+<h2>💰 Зарплата за месяц</h2>
 
-<h1>Зарплата тренера</h1>
-<p>Позже здесь мы подключим расчёты по API Google Sheets.</p>
+<div class="loading">Загрузка...</div>
+
+<div id="salaryCard" class="card" style="display:none;">
+  <a href="index.html">⬅ Назад в меню</a>
+  <div class="item">Зарплата: <span id="salary"></span> ₽</div>
+  <div class="item">Аванс: <span id="advance"></span> ₽</div>
+  <div class="item">Премия: <span id="bonus"></span> ₽</div>
+</div>
+
+<script>
+const API_URL = "https://script.google.com/macros/s/AKfycbydYQAoOMHlIAEZIsSUu3sNALYsltItXaBrc6qYHkUdmRvbfgIAutkhgV1Yowpw46WmFg/exec";  // ← сюда твой ID
+
+const trainerId = localStorage.getItem("trainer_id");
+if (!trainerId) window.location.href = "login.html";
+
+async function loadSalary() {
+  try {
+    const res = await fetch(`${API_URL}?salary=1&trainer_id=${trainerId}`);
+    const data = await res.json();
+
+    if (!data.ok) {
+      document.querySelector('.loading').innerText = "Ошибка загрузки";
+      return;
+    }
+
+    document.getElementById("salary").innerText  = data.salary;
+    document.getElementById("advance").innerText = data.advance;
+    document.getElementById("bonus").innerText   = data.bonus;
+
+    document.querySelector('.loading').style.display = "none";
+    document.getElementById("salaryCard").style.display = "block";
+
+  } catch (e) {
+    document.querySelector('.loading').innerText = "Ошибка соединения";
+  }
+}
+
+loadSalary();
+</script>
 
 </body>
 </html>
