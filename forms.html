@@ -4,30 +4,79 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Формы и отчёты</title>
+
   <style>
-    body { font-family: Arial, sans-serif; padding: 20px; }
-    a { text-decoration: none; display: inline-block; margin-bottom: 20px; font-size: 18px; }
-    .link-block {
+    body {
+      font-family: Arial, sans-serif;
+      background: #f6f6f6;
+      padding: 20px;
+    }
+
+    a.back {
+      display: inline-block;
+      margin-bottom: 20px;
+      color: #5a2ddb;
+      text-decoration: none;
+      font-size: 16px;
+    }
+
+    h2 {
+      margin-bottom: 25px;
+      text-align: left;
+    }
+
+    .menu {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .btn {
+      background: #fff;
       padding: 15px;
-      background: #f2f2f2;
-      border-radius: 10px;
-      margin-bottom: 12px;
+      border-radius: 12px;
+      border: 2px solid #333;
       font-size: 18px;
+      cursor: pointer;
+      text-decoration: none;
+      color: #000;
+      transition: 0.2s;
+    }
+
+    .btn:hover {
+      background: #eaeaea;
     }
   </style>
 </head>
+
 <body>
 
+<a href="index.html" class="back">← Назад в меню</a>
+
+<h2>Формы и отчёты</h2>
+
 <a href="index.html">⬅ Назад в меню</a>
+  
+<div class="menu">
+  <a id="formAttendance" class="btn" target="_blank">Форма посещаемости</a>
+  <a id="formSalary" class="btn" target="_blank">Форма оплаты</a>
+  <a id="formDelete" class="btn" target="_blank">Удалить ученика</a>
+  <a id="formOrder" class="btn" target="_blank">Форма заказа товаров</a>
+</div>
 
-<h1>Формы и отчёты</h1>
+<script>
+  // Достаём ссылки форм, сохранённые после авторизации
+  const formAttendance = localStorage.getItem("form_attendance");
+  const formSalary     = localStorage.getItem("form_salary");
+  const formDelete     = localStorage.getItem("form_delete");
+  const formOrder      = localStorage.getItem("form_order");
 
-<div class="link-block">Форма посещаемости</div>
-<div class="link-block">Форма оплаты</div>
-<div class="link-block">Удалить ученика</div>
-<div class="link-block">Форма заказа товаров</div>
-
-<p>Позже сюда добавим ссылки на настоящие формы Google.</p>
+  // Подставляем
+  document.getElementById("formAttendance").href = formAttendance || "#";
+  document.getElementById("formSalary").href     = formSalary     || "#";
+  document.getElementById("formDelete").href     = formDelete     || "#";
+  document.getElementById("formOrder").href      = formOrder      || "#";
+</script>
 
 </body>
 </html>
