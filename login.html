@@ -53,37 +53,9 @@
 <div class="error" id="error"></div>
 
 <script>
-const API = "https://script.google.com/macros/s/AKfycbydYQAoOMHlIAEZIsSUu3sNALYsltItXaBrc6qYHkUdmRvbfgIAutkhgV1Yowpw46WmFg/exec"; // вставь свой ID
+const API = "https://script.google.com/macros/s/ТВОЙ_ID/exec"; // ← ВСТАВЬ СВОЙ DEPLOY URL
 
 async function login() {
     const phone = document.getElementById("phone").value.trim();
     if (!phone) {
-        document.getElementById("error").innerText = "Введите номер";
-        return;
-    }
-
-    try {
-        const res = await fetch(`${API}?login=1&phone=${phone}`);
-        const data = await res.json();
-
-        if (!data.found) {
-    document.getElementById("error").innerText = "Тренер не найден";
-    return;
-}
-
-// сохраняем весь объект тренера
-localStorage.setItem("trainer", JSON.stringify(data));
-
-// Переход в меню
-window.location.href = "index.html";
-
-
-
-    } catch (err) {
-        document.getElementById("error").innerText = "Ошибка соединения";
-    }
-}
-</script>
-
-</body>
-</html>
+        document.getElementById("err
