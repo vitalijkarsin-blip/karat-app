@@ -32,10 +32,15 @@
 <script>
 const API_URL = "https://script.google.com/macros/s/AKfycbydYQAoOMHlIAEZIsSUu3sNALYsltItXaBrc6qYHkUdmRvbfgIAutkhgV1Yowpw46WmFg/exec"; // ← заменяем
 
-  const trainerId = localStorage.getItem("trainer_id");
-if (!trainerId) {
-    window.location.href = "login.html";
-}
+document.addEventListener("DOMContentLoaded", function () {
+    const trainer = JSON.parse(localStorage.getItem("trainer"));
+    
+    if (!trainer) {
+        alert("Ошибка: данные тренера не найдены. Выполните вход заново.");
+        window.location.href = "index.html";
+        return;
+    }
+
 
 
 
