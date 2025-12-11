@@ -1,13 +1,11 @@
 self.addEventListener('install', (e) => {
-  console.log('Service Worker: installed');
-  self.skipWaiting();
+  console.log('Service Worker: Установлен');
 });
 
 self.addEventListener('activate', (e) => {
-  console.log('Service Worker: activated');
-  return self.clients.claim();
+  console.log('Service Worker: Активирован');
 });
 
-self.addEventListener('fetch', (event) => {
-  event.respondWith(fetch(event.request));
+self.addEventListener('fetch', (e) => {
+  // Базовый перехват запросов (пока без кэша)
 });
