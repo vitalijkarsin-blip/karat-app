@@ -1,7 +1,8 @@
 {
   "name": "КАРАТ — приложение тренера",
   "short_name": "КАРАТ",
-  "start_url": "index.html",
+  "start_url": "/karat-app/index.html",
+  "scope": "/karat-app/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#d32f2f",
@@ -13,9 +14,21 @@
       "type": "image/png"
     },
     {
+      "src": "icon-256.png",
+      "sizes": "256x256",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-384.png",
+      "sizes": "384x384",
+      "type": "image/png"
+    },
+    {
       "src": "icon-512.png",
       "sizes": "512x512",
       "type": "image/png"
     }
-  ]
+  ],
+
+  "prefer_related_applications": false
 }
