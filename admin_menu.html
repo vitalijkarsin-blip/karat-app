@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>KARAT — Меню администратора</title>
-  <link rel="manifest" href="manifest.json">
 
   <style>
     body {
@@ -52,105 +51,9 @@
     .btn:hover {
       background: #eaeaea;
     }
-
-    .section {
-      margin-top: 30px;
-      font-size: 20px;
-      font-weight: bold;
-      text-align: left;
-      max-width: 400px;
-      margin-left: auto;
-      margin-right: auto;
-      color: #333;
-    }
   </style>
 </head>
 
 <body>
 
-<!-- ▣ вывод имени администратора -->
-<div id="adminInfo" class="admin-info"></div>
-
-<h1>Меню администратора</h1>
-
-
-<!-- ▣ ВЕДОМОСТИ -->
-<div class="section">📘 Ведомости</div>
-<div class="menu">
-  <a class="btn" onclick="openLink('karatVedom')">Карат</a>
-  <a class="btn" onclick="openLink('krasnVedom')">Краснотурьинск</a>
-  <a class="btn" onclick="openLink('maugliVedom')">Маугли</a>
-  <a class="btn" onclick="openLink('stretchVedom')">Стретчинг</a>
-  <a class="btn" onclick="openLink('commonVedom')">🔥 Общая ведомость / Доход</a>
-</div>
-
-
-<!-- ▣ ВЗНОСЫ -->
-<div class="section">💳 Взносы</div>
-<div class="menu">
-  <a class="btn" onclick="openLink('karatFees')">Карат — взносы</a>
-<a class="btn" onclick="openLink('krasnFees')">Краснотурьинск — взносы</a>
-<a class="btn" onclick="openLink('maugliFees')">Маугли — взносы</a>
-
-</div>
-
-
-<!-- ▣ ПОСЕЩАЕМОСТЬ -->
-<div class="section">🗂 Посещаемость</div>
-<div class="menu">
-  <a class="btn" onclick="openLink('karatAttend')">Карат</a>
-  <a class="btn" onclick="openLink('krasnAttend')">Краснотурьинск</a>
-  <a class="btn" onclick="openLink('maugliAttend')">Маугли</a>
-</div>
-
-
-<!-- ▣ ДЕТИ -->
-<div class="section">🧒 Список детей</div>
-<div class="menu">
-  <a class="btn" onclick="openLink('kidsCommon')">Общая база детей</a>
-</div>
-
-
-<!-- ▣ ЗАКАЗ ТОВАРОВ -->
-<div class="section">📦 Заказ товаров</div>
-<div class="menu">
-  <a class="btn" onclick="openLink('orderForm')">Форма заказа товаров</a>
-</div>
-
-
-<!-- ▣ АНАЛИТИКА -->
-<div class="section">📈 Аналитика</div>
-<div class="menu">
-  <a class="btn" onclick="openLink('monitoring')">Мониторинг нормативов</a>
-  <a class="btn" onclick="openLink('stockAdmin')">📦 Наличие товара</a>
-</div>
-
-
-<!-- ▣ ТРЕНЕРЫ -->
-<div class="section">👥 Тренеры</div>
-<div class="menu">
-  <a class="btn" onclick="openLink('trainersList')">👥 Список тренеров</a>
-</div>
-
-
-<!-- ▣ ВЫХОД -->
-<div class="menu">
-  <a class="btn" onclick="logout()">🚪 Выйти</a>
-</div>
-
-
-<script src="admin_menu.js"></script>
-
-<script>
-  const adminData = localStorage.getItem("trainer");
-  if (!adminData) {
-      window.location.href = "login.html";
-  }
-
-  const admin = JSON.parse(adminData);
-  document.getElementById("adminInfo").innerText =
-      "👑 Руководитель: " + (admin.name || "Без имени");
-</script>
-
-</body>
-</html>
+<div id="adminInfo" class="admin-info">
