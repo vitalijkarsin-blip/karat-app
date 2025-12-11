@@ -5,16 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Список детей</title>
   <style>
-    body { 
-      font-family: Arial, sans-serif; 
-      margin: 0; 
-      padding: 20px; 
-      display: flex; 
-      flex-direction: column; 
-      height: 100vh; 
-      box-sizing: border-box; 
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      box-sizing: border-box;
     }
-
     .back-btn {
       font-size: 18px;
       padding: 10px 0;
@@ -24,18 +23,14 @@
       color: #333;
       font-weight: bold;
     }
-    .back-btn:hover {
-      opacity: 0.7;
-    }
+    .back-btn:hover { opacity: 0.7; }
 
-    h1 { 
-      margin: 0 0 15px 0; 
-    }
+    h1 { margin: 0 0 15px 0; }
 
-    iframe { 
-      flex: 1; 
-      width: 100%; 
-      border: none; 
+    iframe {
+      flex: 1;
+      width: 100%;
+      border: none;
     }
 
     .loading {
@@ -45,33 +40,23 @@
     }
   </style>
 </head>
+
 <body>
 
 <div class="back-btn" onclick="window.location.href='index.html'">⬅ Назад в меню</div>
 <h1>Список детей</h1>
 
-<div class="loading" id="loading">Загрузка базы детей…</div>
+<div id="loading" class="loading">Загрузка…</div>
 <iframe id="kidsFrame" style="display:none;"></iframe>
 
 <script>
-const trainerData = localStorage.getItem("trainer");
-if (!trainerData) window.location.href = "login.html";
-
-const trainer = JSON.parse(trainerData);
-
-// Берём URL из CRM и убираем хвост #gid=...
-let kidsURL = trainer.kids_table.split('#')[0];
-
-// Настоящий GID листа "Список"
-const GID = 0;
-
-// Формируем ссылку в режиме pubhtml
-kidsURL = kidsURL.replace("/edit", "/pubhtml");
-
-const finalURL = `${kidsURL}?gid=${GID}&single=true&widget=true&headers=false`;
-
 const frame = document.getElementById("kidsFrame");
-frame.src = finalURL;
+
+// ❗ Используем ПОЛНОСТЬЮ ГОТОВУЮ опубликованную ссылку
+const KIDS_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQTDlmv01ZCoM1RgkgmWIlBApKlzAtYJQNccJEjEzkp4uUrKXEQkS_I31CbXsvDskw7XRJdIxjyvGm4/pubhtml?gid=0&single=true&widget=true&headers=false";
+
+// Вставляем таблицу
+frame.src = KIDS_URL;
 
 frame.onload = () => {
     document.getElementById("loading").style.display = "none";
