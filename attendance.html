@@ -26,12 +26,18 @@
 <iframe id="journalFrame" style="display:none;"></iframe>
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbydYQAoOMHlIAEZIsSUu3sNALYsltItXaBrc6qYHkUdmRvbfgIAutkhgV1Yowpw46WmFg/exec"; // ← заменяем
-
-const trainerData = localStorage.getItem("trainer");
+  const trainerData = localStorage.getItem("trainer");
   if (!trainerData) {
       window.location.href = "login.html";
   }
+</script>
+
+
+  
+<script>
+const API_URL = "https://script.google.com/macros/s/AKfycbydYQAoOMHlIAEZIsSUu3sNALYsltItXaBrc6qYHkUdmRvbfgIAutkhgV1Yowpw46WmFg/exec"; // ← заменяем
+
+
 
 
 async function loadJournal() {
