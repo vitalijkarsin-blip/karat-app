@@ -3,85 +3,71 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Карат — ведомость</title>
+  <title>Карат — Ведомости</title>
 
   <style>
-    body { 
-      font-family: Arial, sans-serif; 
-      margin: 0; 
-      padding: 20px; 
-      display: flex; 
-      flex-direction: column; 
-      height: 100vh; 
-      box-sizing: border-box; 
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background: #f6f6f6;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      box-sizing: border-box;
     }
 
-    .back-btn {
+    .back {
+      text-align: left;
       font-size: 18px;
-      padding: 10px 0;
       margin-bottom: 10px;
       cursor: pointer;
-      text-align: left;
-      color: #333;
       font-weight: bold;
+      color: #333;
     }
-    .back-btn:hover { opacity: 0.7; }
 
-    h1 { margin: 0 0 15px 0; }
+    h1 {
+      margin: 0 0 15px 0;
+    }
 
     iframe {
       flex: 1;
-      width: 100%;
       border: none;
+      width: 100%;
     }
 
     .loading {
       font-size: 18px;
-      text-align: center;
       margin-top: 20px;
     }
   </style>
 </head>
 <body>
 
-<div class="back-btn" onclick="window.location.href='admin_menu.html'">⬅ Назад в меню</div>
-<h1>Карат — ведомость</h1>
+<div class="back" onclick="location.href='admin_vedomosti.html'">⬅ В главное меню</div>
 
-<div class="loading" id="loading">Загрузка ведомости…</div>
-<iframe id="sheetFrame" style="display:none;"></iframe>
+<h1>Карат — Ведомости</h1>
+
+<div id="loading" class="loading">Загрузка таблицы…</div>
+<iframe id="frame" style="display:none;"></iframe>
 
 <script>
-const trainerData = localStorage.getItem("trainer");
-if (!trainerData) location.href = "login.html";
+  // Берём ТОЛЬКО ссылку на ведомость из AdminTables
+  const adminTables = JSON.parse(localStorage.getItem("adminTables") || "[]");
+  const row = adminTables.find(r => r.id === "karatVedom");
 
-const admin = JSON.parse(trainerData);
+  if (!row) {
+    document.getElementById("loading").innerText = "Ошибка: ссылка не найдена.";
+  } else {
+    const iframe = document.getElementById("frame");
+    iframe.src = row.url;
 
-// Загружаем таблицу из AdminTables, ранее сохранённую
-const tables = localStorage.getItem("adminTables");
-if (!tables) {
-    alert("Не загружены AdminTables");
-    window.location.href = "admin_menu.html";
-}
-
-const adminTables = JSON.parse(tables);
-
-// Находим строку Карат
-const row = adminTables.find(r => r.id === "karatVedom");
-if (!row) {
-    alert("Ссылка не найдена");
-    window.location.href = 'admin_menu.html';
-}
-
-let url = row.url;
-url = url.replace(/gid=\d+/,'gid=0'); // открывать первый лист
-
-const frame = document.getElementById("sheetFrame");
-frame.src = url;
-
-frame.onload = () => {
-    document.getElementById("loading").style.display = "none";
-    frame.style.display = "block";
-};
+    iframe.onload = () => {
+      document.getElementById("loading").style.display = "none";
+      iframe.style.display = "block";
+    };
+  }
 </script>
 
 </body>
