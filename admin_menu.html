@@ -1,39 +1,12 @@
-.trainer-info {
-    font-size: 18px;
-    margin-bottom: 15px;
-    text-align: center;
-}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Меню администратора</title>
+<link rel="stylesheet" href="style.css">
+</head>
 
-h2 {
-    text-align: center;
-    margin-bottom: 25px;
-}
-
-.menu-btn {
-    width: 85%;
-    margin: 10px auto;
-    display: block;
-    padding: 15px;
-    font-size: 18px;
-    background: white;
-    border: 2px solid #ccc;
-    border-radius: 15px;
-    cursor: pointer;
-    text-align: left;
-}
-
-.menu-btn:hover {
-    background: #f3f3f3;
-}
-
-.important {
-    border-color: #ff9800;
-}
-
-.exit {
-    border-color: #a33;
-    color: #a33;
-}
+<body>
 
 <div class="trainer-info">
     👑 Руководитель: <span id="adminName"></span>
@@ -41,29 +14,63 @@ h2 {
 
 <h2>Меню администратора</h2>
 
-<!-- Ведомости -->
-<button class="menu-btn" onclick="openLink('karatVedom')">📘 Карат</button>
-<button class="menu-btn" onclick="openLink('krasnVedom')">📙 Краснотурьинск</button>
-<button class="menu-btn" onclick="openLink('maugliVedom')">📗 Маугли</button>
-<button class="menu-btn" onclick="openLink('stretchVedom')">📕 Стретчинг</button>
-<button class="menu-btn important" onclick="openLink('commonVedom')">🔥 Общая ведомость</button>
 
-<!-- Посещаемость -->
-<button class="menu-btn" onclick="openLink('karatAttend')">👥 Карат — посещаемость</button>
-<button class="menu-btn" onclick="openLink('krasnAttend')">👥 Краснотурьинск — посещаемость</button>
-<button class="menu-btn" onclick="openLink('maugliAttend')">👥 Маугли — посещаемость</button>
+<!-- ВЕДОМОСТИ -->
+<h3>📘 Ведомости</h3>
 
-<!-- Дети -->
-<button class="menu-btn" onclick="openLink('kidsCommon')">🧒 Общая база детей</button>
+<button class="menu-btn" onclick="openLink('karatVedom')">Карат</button>
+<button class="menu-btn" onclick="openLink('krasnVedom')">Краснотурьинск</button>
+<button class="menu-btn" onclick="openLink('maugliVedom')">Маугли</button>
+<button class="menu-btn" onclick="openLink('stretchVedom')">Стретчинг</button>
+<button class="menu-btn important" onclick="openLink('commonVedom')">🔥 Общая ведомость / Доход</button>
 
-<!-- Заказ товаров -->
-<button class="menu-btn" onclick="openLink('orderForm')">📦 Заказ товаров</button>
 
-<!-- Аналитика -->
-<button class="menu-btn" onclick="openLink('monitoring')">📈 Мониторинг нормативов</button>
+<!-- ВЗНОСЫ -->
+<h3>💳 Взносы</h3>
 
-<!-- Тренеры -->
-<button class="menu-btn" onclick="openLink('trainersList')">👥 Список тренеров</button>
+<button class="menu-btn" onclick="openLink('karatFees')">Карат — взносы</button>
+<button class="menu-btn" onclick="openLink('krasnFees')">Краснотурьинск — взносы</button>
+<button class="menu-btn" onclick="openLink('maugliFees')">Маугли — взносы</button>
 
-<!-- Выход -->
+
+
+<!-- ПОСЕЩАЕМОСТЬ -->
+<h3>🗂 Посещаемость</h3>
+
+<button class="menu-btn" onclick="openLink('karatAttend')">Карат</button>
+<button class="menu-btn" onclick="openLink('krasnAttend')">Краснотурьинск</button>
+<button class="menu-btn" onclick="openLink('maugliAttend')">Маугли</button>
+
+
+<!-- ДЕТИ -->
+<h3>🧒 Список детей</h3>
+
+<button class="menu-btn" onclick="openLink('kidsCommon')">Общая база детей</button>
+
+
+<!-- ЗАКАЗ ТОВАРОВ -->
+<h3>📦 Заказ товаров</h3>
+
+<button class="menu-btn" onclick="openLink('orderForm')">Форма заказа товаров</button>
+
+
+<!-- АНАЛИТИКА -->
+<h3>📈 Аналитика</h3>
+
+<button class="menu-btn" onclick="openLink('monitoring')">Мониторинг нормативов</button>
+
+
+<!-- ТРЕНЕРЫ -->
+<h3>👥 Тренеры</h3>
+
+<button class="menu-btn" onclick="openLink('trainersList')">Список тренеров</button>
+
+
+<!-- ВЫХОД -->
 <button class="menu-btn exit" onclick="logout()">🚪 Выйти</button>
+
+
+<script src="admin_menu.js"></script>
+
+</body>
+</html>
