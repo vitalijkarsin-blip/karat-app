@@ -1,59 +1,47 @@
 /*************************************************
- * ADMIN MENU — общее хранилище
+ * ADMIN — общие вещи
  *************************************************/
-const API_URL = "https://script.google.com/macros/s/AKfycbydYQAoOMHlIAEZIsSUu3sNALYsltItXaBrc6qYHkUdmRvbfgIAutkhgV1Yowpw46WmFg/exec";
+
+const API_URL = "https://script.google.com/macros/s/AKfycbydYQAoOMHlIAEZIsSUu3sNALYsltItXaBrc6qYHkUdmRvbfgIAutkhgV1Yowpw46WmFg/exec";   // <-- сюда твой URL /exec
 let ADMIN_TABLES = [];
 
 /*************************************************
- * Автозагрузка AdminTables на ЛЮБОЙ странице
+ * Загружаем AdminTables на всех страницах админа
  *************************************************/
 document.addEventListener("DOMContentLoaded", () => {
-  
-  // Проверяем вход
   const data = localStorage.getItem("trainer");
-  if (!data) return; // подменю тоже могут открываться
+  if (!data) return;
 
   const user = JSON.parse(data);
 
-  // Загружаем таблицу ВСЕГДА
-  loadAdminTables();
-
-  // Выводим ФИО если есть поле
   const info = document.getElementById("adminInfo");
   if (info) info.innerText = "👑 Руководитель: " + (user.name || "");
+
+  loadAdminTables();
 });
 
-/*************************************************
- * Загрузка AdminTables
- *************************************************/
 function loadAdminTables() {
   fetch(API_URL + "?admintables=1")
     .then(r => r.json())
     .then(json => {
       ADMIN_TABLES = json.tables || [];
+      console.log("AdminTables:", ADMIN_TABLES);
     })
-    .catch(() => {
-      alert("Ошибка загрузки AdminTables");
+    .catch(err => {
+      console.log("Ошибка загрузки AdminTables:", err);
     });
 }
 
 /*************************************************
- * Открытие ссылки
+ * Открыть ссылку по id (для кнопок в меню)
  *************************************************/
 function openLink(id) {
-  if (!ADMIN_TABLES || ADMIN_TABLES.length === 0) {
-    alert("Таблица ссылок ещё не загружена");
-    return;
-  }
+  if (!ADMIN_TABLES.length) return;
 
   const row = ADMIN_TABLES.find(r => r.id === id);
+  if (!row) return;
 
-  if (!row) {
-    document.body.innerHTML += 
-      `<div style="padding:20px;color:red;">Ошибка: ссылка '${id}' не найдена.</div>`;
-    return;
-  }
-
+  // просто переходим на таблицу
   window.location.href = row.url;
 }
 
