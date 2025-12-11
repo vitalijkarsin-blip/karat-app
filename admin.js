@@ -1,7 +1,7 @@
 /*************************************************
  * ADMIN MENU — общее хранилище
  *************************************************/
-const API_URL = "YOUR_WEB_APP_URL/exec";
+const API_URL = "AKfycbydYQAoOMHlIAEZIsSUu3sNALYsltItXaBrc6qYHkUdmRvbfgIAutkhgV1Yowpw46WmFg/exec";
 let ADMIN_TABLES = [];
 
 /*************************************************
