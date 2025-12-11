@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -15,31 +14,63 @@
       height: 100vh; 
       box-sizing: border-box; 
     }
-    .header {
-      margin-bottom: 20px;
-      flex-shrink: 0;
+
+    .back-btn {
+      font-size: 18px;
+      padding: 10px 0;
+      margin-bottom: 10px;
+      cursor: pointer;
+      text-align: left;
+      color: #333;
+      font-weight: bold;
     }
-    a { 
-      text-decoration: none; 
-      display: inline-block; 
-      font-size: 18px; 
+    .back-btn:hover {
+      opacity: 0.7;
     }
-    h1 {
-      margin: 0 0 10px 0;
+
+    h1 { 
+      margin: 0 0 15px 0; 
     }
+
     iframe { 
       flex: 1; 
       width: 100%; 
       border: none; 
-      height: auto; 
+    }
+
+    .loading {
+      font-size: 18px;
+      text-align: center;
+      margin-top: 20px;
     }
   </style>
 </head>
 <body>
-  <div class="header">
-    <a href="index.html">⬅ Назад в меню</a>
-    <h1>Список детей</h1>
-  </div>
- <iframe src="https://docs.google.com/spreadsheets/d/e/2PACX-1vQxreRMECBZldPHSC8_K_zdU0fpHRiumja5_gH9zKq0aLluR_UzufWMP0D32QO052MB6XbG5axBXDxj/pubhtml?widget=true&amp;headers=false"></iframe>
+
+<div class="back-btn" onclick="window.location.href='index.html'">⬅ Назад в меню</div>
+<h1>Список детей</h1>
+
+<div class="loading" id="loading">Загрузка базы детей…</div>
+<iframe id="kidsFrame" style="display:none;"></iframe>
+
+<script>
+// Проверка авторизации
+const trainerData = localStorage.getItem("trainer");
+if (!trainerData) {
+    window.location.href = "login.html";
+}
+
+const trainer = JSON.parse(trainerData);
+const kidsURL = trainer.kids_table; // ссылка из Apps Script
+
+// Вставляем таблицу в iframe
+const frame = document.getElementById("kidsFrame");
+frame.src = kidsURL;
+frame.onload = () => {
+    document.getElementById("loading").style.display = "none";
+    frame.style.display = "block";
+};
+</script>
+
 </body>
 </html>
