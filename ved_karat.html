@@ -52,23 +52,37 @@
 <div id="loading" class="loading">Загрузка таблицы…</div>
 <iframe id="frame" style="display:none;"></iframe>
 
+<script src="admin.js"></script>
 <script>
-  // Берём ТОЛЬКО ссылку на ведомость из AdminTables
-  const adminTables = JSON.parse(localStorage.getItem("AdminTables") || "[]");
-  const row = adminTables.find(r => r.id === "karatVedom");
+document.addEventListener("DOMContentLoaded", () => {
+    
+    // ждём загрузки AdminTables из admin.js
+    const check = setInterval(() => {
+        if (window.ADMIN_TABLES && ADMIN_TABLES.length > 0) {
+            clearInterval(check);
+            loadVedomost();
+        }
+    }, 100);
 
-  if (!row) {
-    document.getElementById("loading").innerText = "Ошибка: ссылка не найдена.";
-  } else {
+});
+
+function loadVedomost() {
+    const row = ADMIN_TABLES.find(r => r.id === "karatVedom");
+
+    if (!row) {
+        document.getElementById("loading").innerText = "Ошибка: ссылка не найдена.";
+        return;
+    }
+
     const iframe = document.getElementById("frame");
     iframe.src = row.url;
-
     iframe.onload = () => {
-      document.getElementById("loading").style.display = "none";
-      iframe.style.display = "block";
+        document.getElementById("loading").style.display = "none";
+        iframe.style.display = "block";
     };
-  }
+}
 </script>
+
 
 </body>
 </html>
