@@ -75,12 +75,20 @@ function loadVedomost() {
     }
 
     const iframe = document.getElementById("frame");
-    iframe.src = row.url;
+
+    // auto-fix google sheets URL
+    const safeUrl = row.url
+        .replace("/edit", "/preview")
+        .replace("#gid=", "?gid=");
+
+    iframe.src = safeUrl;
+
     iframe.onload = () => {
         document.getElementById("loading").style.display = "none";
         iframe.style.display = "block";
     };
 }
+
 </script>
 
 
