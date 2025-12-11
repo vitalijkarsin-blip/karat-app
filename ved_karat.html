@@ -31,11 +31,7 @@
       margin: 0 0 15px 0;
     }
 
-    iframe {
-      flex: 1;
-      border: none;
-      width: 100%;
-    }
+    
 
     .loading {
       font-size: 18px;
@@ -52,43 +48,27 @@
 <div id="loading" class="loading">Загрузка таблицы…</div>
 <iframe id="frame" style="display:none;"></iframe>
 
+
 <script src="admin.js"></script>
 <script>
 document.addEventListener("DOMContentLoaded", () => {
-    
-    // ждём загрузки AdminTables из admin.js
-    const check = setInterval(() => {
-        if (window.ADMIN_TABLES && ADMIN_TABLES.length > 0) {
-            clearInterval(check);
-            loadVedomost();
-        }
-    }, 100);
+  const loading = document.getElementById("loading");
 
-});
+  const check = setInterval(() => {
+    if (!window.ADMIN_TABLES || !ADMIN_TABLES.length) return;
 
-function loadVedomost() {
+    clearInterval(check);
+
     const row = ADMIN_TABLES.find(r => r.id === "karatVedom");
-
     if (!row) {
-        document.getElementById("loading").innerText = "Ошибка: ссылка не найдена.";
-        return;
+      loading.textContent = "Ссылка не найдена.";
+      return;
     }
 
-    const iframe = document.getElementById("frame");
-
-    // auto-fix google sheets URL
-    const safeUrl = row.url
-        .replace("/edit", "/preview")
-        .replace("#gid=", "?gid=");
-
-    iframe.src = safeUrl;
-
-    iframe.onload = () => {
-        document.getElementById("loading").style.display = "none";
-        iframe.style.display = "block";
-    };
-}
-
+    loading.textContent = "Открываем ведомость…";
+    window.location.href = row.url;   // просто переходим в таблицу
+  }, 200);
+});
 </script>
 
 
