@@ -65,7 +65,7 @@ const kidsURL = trainer.kids_table; // ссылка из Apps Script
 
 // Вставляем таблицу в iframe
 const frame = document.getElementById("kidsFrame");
-frame.src = kidsURL;
+frame.src = kidsURL + "&gid=0";
 frame.onload = () => {
     document.getElementById("loading").style.display = "none";
     frame.style.display = "block";
