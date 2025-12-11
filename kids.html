@@ -63,13 +63,17 @@ if (!trainerData) {
 const trainer = JSON.parse(trainerData);
 const kidsURL = trainer.kids_table; // ссылка из Apps Script
 
-// Вставляем таблицу в iframe
 const frame = document.getElementById("kidsFrame");
-frame.src = kidsURL + "&gid=0";
+
+// Заменяем старый gid (3-й лист) на gid=0 (первый лист)
+const finalURL = kidsURL.replace(/gid=\d+/, "gid=0");
+
+frame.src = finalURL;
 frame.onload = () => {
     document.getElementById("loading").style.display = "none";
     frame.style.display = "block";
 };
+
 </script>
 
 </body>
