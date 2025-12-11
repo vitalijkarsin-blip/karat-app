@@ -16,12 +16,20 @@
 <iframe id="monthFrame" style="display:none;"></iframe>
 
 <script>
+
+  // 🔥 Правильная проверка авторизации
+const trainerData = localStorage.getItem("trainer");
+if (!trainerData) {
+    window.location.href = "login.html";
+}
+
+// Разбираем объект тренера
+const trainer = JSON.parse(trainerData);
+const trainerId = trainer.trainer_id;
+  
 const API_URL = "https://script.google.com/macros/s/AKfycbydYQAoOMHlIAEZIsSUu3sNALYsltItXaBrc6qYHkUdmRvbfgIAutkhgV1Yowpw46WmFg/exec"; // ← подставь свой ID
 
-const trainerId = localStorage.getItem("trainer_id");
-if (!trainerId) {
-  window.location.href = "login.html";
-}
+
 
 async function loadPreviousMonth() {
   try {
