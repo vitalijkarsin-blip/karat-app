@@ -63,7 +63,7 @@ let kidsURL = trainer.kids_table;
 
 // Ничего не меняем — вставляем как есть!
 const frame = document.getElementById("kidsFrame");
-frame.src = kidsURL;
+frame.src = kidsURL + "&gid=0;
 
 frame.onload = () => {
     document.getElementById("loading").style.display = "none";
