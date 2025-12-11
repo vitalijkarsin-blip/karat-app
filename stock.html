@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -5,20 +6,42 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Наличие товаров</title>
   <style>
-    body { font-family: Arial, sans-serif; padding: 20px; }
-    a { text-decoration: none; display: inline-block; margin-bottom: 20px; font-size: 18px; }
+    body { 
+      font-family: Arial, sans-serif; 
+      margin: 0; 
+      padding: 20px; 
+      display: flex; 
+      flex-direction: column; 
+      height: 100vh; 
+      box-sizing: border-box; 
+    }
+    .header {
+      margin-bottom: 20px;
+      flex-shrink: 0;
+    }
+    a { 
+      text-decoration: none; 
+      display: inline-block; 
+      font-size: 18px; 
+    }
+    h1 {
+      margin: 0 0 10px 0;
+    }
+    iframe { 
+      flex: 1; 
+      width: 100%; 
+      border: none; 
+      height: auto; 
+    }
   </style>
 </head>
 <body>
-
-<a href="index.html">⬅ Назад в меню</a>
-
-<h1>Наличие товаров</h1>
-<iframe 
-  src="https://docs.google.com/spreadsheets/d/e/2PACX-1vSiPliuAS2yQKIk23P0kgZBeM-wMDKAoTFgzKLZQSLDsUUlPS4xeWISbUCMvs-Jz2HeIxDsI20mHdSO/pubhtml?gid=0&amp;
-  single=true&amp;widget=true&amp;headers=false">
-  
+  <div class="header">
+    <a href="index.html">⬅ Назад в меню</a>
+    <h1>Наличие товаров</h1>
+  </div>
+  <iframe 
+    src="https://docs.google.com/spreadsheets/d/e/2PACX-1vSiPliuAS2yQKIk23P0kgZBeM-wMDKAoTFgzKLZQSLDsUUlPS4xeWISbUCMvs-Jz2HeIxDsI20mHdSO/pubhtml?gid=0&amp;single=true&amp;widget=true&amp;headers=false">
   </iframe>
-
 </body>
 </html>
