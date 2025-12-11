@@ -4,15 +4,16 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Список детей</title>
+
   <style>
-    body { 
-      font-family: Arial, sans-serif; 
-      margin: 0; 
-      padding: 20px; 
-      display: flex; 
-      flex-direction: column; 
-      height: 100vh; 
-      box-sizing: border-box; 
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      box-sizing: border-box;
     }
 
     .back-btn {
@@ -24,48 +25,55 @@
       color: #333;
       font-weight: bold;
     }
-    .back-btn:hover {
-      opacity: 0.7;
-    }
+    .back-btn:hover { opacity: 0.7; }
 
-    h1 { 
-      margin: 0 0 15px 0; 
-    }
+    h1 { margin: 0 0 15px 0; }
 
-    iframe { 
-      flex: 1; 
-      width: 100%; 
-      border: none; 
+    iframe {
+      flex: 1;
+      width: 100%;
+      border: none;
     }
 
     .loading {
       font-size: 18px;
-      text-align: center;
       margin-top: 20px;
+      text-align: center;
     }
   </style>
 </head>
+
 <body>
 
 <div class="back-btn" onclick="window.location.href='index.html'">⬅ Назад в меню</div>
 <h1>Список детей</h1>
 
-<div class="loading" id="loading">Загрузка базы детей…</div>
+<div id="loading" class="loading">Загрузка…</div>
 <iframe id="kidsFrame" style="display:none;"></iframe>
 
 <script>
-// Проверка авторизации
+// Проверяем авторизацию
 const trainerData = localStorage.getItem("trainer");
-if (!trainerData) {
-    window.location.href = "login.html";
+if (!trainerData) window.location.href = "login.html";
+
+// Получаем объект тренера
+const trainer = JSON.parse(trainerData);
+
+// Берём URL таблицы из CRM
+let kidsURL = trainer.kids_table;
+
+// Преобразуем ссылку edit → pubhtml
+if (kidsURL.includes("/edit")) {
+    kidsURL = kidsURL.replace("/edit", "/pubhtml");
 }
 
-const trainer = JSON.parse(trainerData);
-const kidsURL = trainer.kids_table; // ссылка из Apps Script
+// Принудительно открываем лист "Список"
+// 👉 Если у твоего листа другой gid — просто замени число
+const LIST_GID = 0;
 
-// Вставляем таблицу в iframe
 const frame = document.getElementById("kidsFrame");
-frame.src = kidsURL + "&gid=0";
+frame.src = kidsURL + `&gid=${LIST_GID}`;
+
 frame.onload = () => {
     document.getElementById("loading").style.display = "none";
     frame.style.display = "block";
