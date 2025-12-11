@@ -54,18 +54,25 @@
 <iframe id="kidsFrame" style="display:none;"></iframe>
 
 <script>
-// Проверка авторизации
 const trainerData = localStorage.getItem("trainer");
-if (!trainerData) {
-    window.location.href = "login.html";
-}
+if (!trainerData) window.location.href = "login.html";
 
 const trainer = JSON.parse(trainerData);
-const kidsURL = trainer.kids_table; // ссылка из Apps Script
 
-// Вставляем таблицу в iframe
+// Берём URL из CRM и убираем хвост #gid=...
+let kidsURL = trainer.kids_table.split('#')[0];
+
+// Настоящий GID листа "Список"
+const GID = 0;
+
+// Формируем ссылку в режиме pubhtml
+kidsURL = kidsURL.replace("/edit", "/pubhtml");
+
+const finalURL = `${kidsURL}?gid=${GID}&single=true&widget=true&headers=false`;
+
 const frame = document.getElementById("kidsFrame");
-frame.src = kidsURL + "&gid=651705828";
+frame.src = finalURL;
+
 frame.onload = () => {
     document.getElementById("loading").style.display = "none";
     frame.style.display = "block";
