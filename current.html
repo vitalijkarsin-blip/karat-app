@@ -16,31 +16,38 @@
 <iframe id="monthFrame" style="display:none;"></iframe>
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbydYQAoOMHlIAEZIsSUu3sNALYsltItXaBrc6qYHkUdmRvbfgIAutkhgV1Yowpw46WmFg/exec"; // подставь свой
-
-const trainerId = localStorage.getItem("trainer_id");
-if (!trainerId) {
-  window.location.href = "login.html";
+// 🔥 Правильная проверка авторизации
+const trainerData = localStorage.getItem("trainer");
+if (!trainerData) {
+    window.location.href = "login.html";
 }
 
+// Разбираем объект тренера
+const trainer = JSON.parse(trainerData);
+const trainerId = trainer.trainer_id;
+
+const API_URL = "https://script.google.com/macros/s/AKfycbydYQAoOMHlIAEZIsSUu3sNALYsltItXaBrc6qYHkUdmRvbfgIAutkhgV1Yowpw46WmFg/exec";
+
+// 🔥 Функция загрузки текущего месяца
 async function loadCurrentMonth() {
-  try {
-    const res = await fetch(`${API_URL}?months=1&trainer_id=${trainerId}`);
-    const data = await res.json();
+    try {
+        const res = await fetch(`${API_URL}?months=1&trainer_id=${trainerId}`);
+        const data = await res.json();
 
-    if (!data.ok || !data.current) {
-      document.querySelector('.loading').innerText = "Ошибка загрузки месяца";
-      return;
+        if (!data.ok || !data.current) {
+            document.querySelector('.loading').innerText = "Ошибка загрузки месяца";
+            return;
+        }
+
+        const frame = document.getElementById("monthFrame");
+        frame.src = data.current.url;
+        frame.style.display = "block";
+
+        document.querySelector('.loading').style.display = "none";
+
+    } catch (err) {
+        document.querySelector('.loading').innerText = "Ошибка соединения";
     }
-
-    const url = data.current.url;
-    const frame = document.getElementById("monthFrame");
-    frame.src = url;
-    frame.style.display = "block";
-    document.querySelector('.loading').style.display = "none";
-  } catch (e) {
-    document.querySelector('.loading').innerText = "Ошибка соединения";
-  }
 }
 
 loadCurrentMonth();
@@ -48,4 +55,3 @@ loadCurrentMonth();
 
 </body>
 </html>
-
