@@ -1,85 +1,70 @@
 /*************************************************
- * ADMIN MENU — проверки + загрузка AdminTables
+ * ADMIN MENU — общее хранилище
  *************************************************/
-
-const API_URL = "YOUR_WEB_APP_URL/exec"; 
-let ADMIN_TABLES = null;
+const API_URL = "YOUR_WEB_APP_URL/exec";
+let ADMIN_TABLES = [];
 
 /*************************************************
- * Проверка роли администратора
+ * Автозагрузка AdminTables на ЛЮБОЙ странице
  *************************************************/
-(function () {
+document.addEventListener("DOMContentLoaded", () => {
+  
+  // Проверяем вход
   const data = localStorage.getItem("trainer");
-
-  if (!data) {
-    location.href = "login.html";
-    return;
-  }
+  if (!data) return; // подменю тоже могут открываться
 
   const user = JSON.parse(data);
 
-  if (user.role !== "admin") {
-    alert("Доступ запрещён");
-    location.href = "index.html";
-    return;
-  }
-
-  const info = document.getElementById("adminInfo");
-  if (info) info.innerText = "👑 Руководитель: " + user.name;
-
+  // Загружаем таблицу ВСЕГДА
   loadAdminTables();
-})();
+
+  // Выводим ФИО если есть поле
+  const info = document.getElementById("adminInfo");
+  if (info) info.innerText = "👑 Руководитель: " + (user.name || "");
+});
 
 /*************************************************
- * Загрузка AdminTables и сохранение в localStorage
+ * Загрузка AdminTables
  *************************************************/
 function loadAdminTables() {
   fetch(API_URL + "?admintables=1")
     .then(r => r.json())
     .then(json => {
-      ADMIN_TABLES = json.tables;
-      
-      // Сохраняем таблицу локально, чтобы ved_*.html могли её использовать
-      localStorage.setItem("adminTables", JSON.stringify(ADMIN_TABLES));
-
-      console.log("AdminTables загружены:", ADMIN_TABLES);
+      ADMIN_TABLES = json.tables || [];
     })
-    .catch(err => console.error(err));
+    .catch(() => {
+      alert("Ошибка загрузки AdminTables");
+    });
 }
 
 /*************************************************
- * Открытие формы или страницы (локальной)
+ * Открытие ссылки
  *************************************************/
-function openPage(page) {
-  location.href = page + ".html";
+function openLink(id) {
+  if (!ADMIN_TABLES || ADMIN_TABLES.length === 0) {
+    alert("Таблица ссылок ещё не загружена");
+    return;
+  }
+
+  const row = ADMIN_TABLES.find(r => r.id === id);
+
+  if (!row) {
+    document.body.innerHTML += 
+      `<div style="padding:20px;color:red;">Ошибка: ссылка '${id}' не найдена.</div>`;
+    return;
+  }
+
+  window.location.href = row.url;
 }
 
 /*************************************************
- * Открытие внешней ссылки (если нужно где-то)
- * ДЕЛАТЬ ТАК НЕ БУДЕМ ДЛЯ ВЕДОМОСТЕЙ,
- * оставлено для совместимости.
- *************************************************/
-function openExternal(url) {
-  const a = document.createElement("a");
-  a.href = url;
-  a.target = "_blank";
-  a.rel = "noopener noreferrer";
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-}
-
-/*************************************************
- * Назад в меню
+ * Навигация
  *************************************************/
 function goBack() {
-  location.href = "admin_menu.html";
+  window.location.href = "admin_menu.html";
 }
 
-/*************************************************
- * Выход
- *************************************************/
 function logout() {
   localStorage.removeItem("trainer");
-  location.href = "login.html";
+  window.location.href = "login.html";
 }
