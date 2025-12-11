@@ -33,13 +33,6 @@
       flex: 1;
       width: 100%;
       border: none;
-      height: auto;
-    }
-
-    .loading {
-      font-size: 18px;
-      margin-top: 20px;
-      text-align: center;
     }
   </style>
 </head>
@@ -49,34 +42,9 @@
 <div class="back-btn" onclick="window.location.href='index.html'">⬅ Назад в меню</div>
 <h1>Мониторинг результатов</h1>
 
-<div id="loading" class="loading">Загрузка…</div>
-<iframe id="resultsFrame" style="display:none;"></iframe>
-
-<script>
-// Проверка авторизации
-const trainerData = localStorage.getItem("trainer");
-if (!trainerData) {
-    window.location.href = "login.html";
-}
-
-const trainer = JSON.parse(trainerData);
-
-// ССЫЛКА НА ТАБЛИЦУ РЕЗУЛЬТАТОВ ИЗ CRM
-let resultsURL = trainer.results_table;
-
-// Если ссылка не опубликованная — переводим в "pubhtml"
-if (resultsURL.includes("edit")) {
-    resultsURL = resultsURL.replace("/edit", "/pubhtml");
-}
-
-// Загружаем iframe
-const frame = document.getElementById("resultsFrame");
-frame.src = resultsURL;
-frame.onload = () => {
-    document.getElementById("loading").style.display = "none";
-    frame.style.display = "block";
-};
-</script>
+<iframe 
+  src="https://docs.google.com/spreadsheets/d/1zZxbpL0NWperdy1DZWmONieRisxZoc7a52LTZb90aoM/pubhtml?widget=true&headers=false">
+</iframe>
 
 </body>
 </html>
