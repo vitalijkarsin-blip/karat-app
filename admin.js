@@ -2,92 +2,73 @@
  * ADMIN MENU — загрузка AdminTables + роуты
  *************************************************/
 
-const API_URL = "YOUR_WEB_APP_URL/exec";  // <-- вставь свой URL сюда
-
+const API_URL = "YOUR_WEB_APP_URL/exec"; 
 let ADMIN_TABLES = null;
 
 /*************************************************
- * Проверка авторизации и роли
+ * Проверка роли
  *************************************************/
 (function () {
-  const trainerData = localStorage.getItem("trainer");
+  const data = localStorage.getItem("trainer");
+  if (!data) { location.href = "login.html"; return; }
 
-  if (!trainerData) {
-    window.location.href = "login.html";
+  const user = JSON.parse(data);
+  if (user.role !== "admin") { 
+    alert("Доступ запрещён");
+    location.href = "index.html"; 
     return;
   }
 
-  const trainer = JSON.parse(trainerData);
-
-  if (trainer.role !== "admin") {
-    alert("Доступ только для администратора");
-    window.location.href = "index.html";
-    return;
-  }
-
-  // отображение имени администратора
   const info = document.getElementById("adminInfo");
-  if (info) info.innerText = "👑 Руководитель: " + trainer.name;
+  if (info) info.innerText = "👑 Руководитель: " + user.name;
 
   loadAdminTables();
 })();
 
 /*************************************************
- * Загрузка AdminTables
+ * Загрузка таблицы
  *************************************************/
 function loadAdminTables() {
   fetch(API_URL + "?admintables=1")
     .then(r => r.json())
     .then(json => {
-      if (!json.ok) {
-        console.error("AdminTables ERROR:", json);
-        return;
-      }
-
       ADMIN_TABLES = json.tables;
-      console.log("AdminTables загружены:", ADMIN_TABLES);
+      renderLinks();
     })
     .catch(err => console.error(err));
 }
 
 /*************************************************
- * Открытие ссылки по ID (без окна подтверждения)
+ * Автоматическое создание <a href="...">
  *************************************************/
-function openLink(id) {
-  if (!ADMIN_TABLES) {
-    alert("Данные ещё загружаются...");
-    return;
-  }
+function renderLinks() {
+  const blocks = document.querySelectorAll("[data-block]");
 
-  const row = ADMIN_TABLES.find(r => String(r.id) === String(id));
+  blocks.forEach(block => {
+    const blockName = block.dataset.block;
 
-  if (!row) {
-    alert("Ссылка не найдена: " + id);
-    return;
-  }
+    // фильтруем строки таблицы
+    const rows = ADMIN_TABLES.filter(r => r.block === blockName);
 
-  if (!row.url) {
-    alert("Для пункта нет URL");
-    return;
-  }
+    rows.forEach(row => {
+      const a = document.createElement("a");
+      a.className = "btn";
+      a.href = row.url;               // ❤️ А ВОТ ОНО — обычная ссылка!
+      a.innerText = row.title;
 
-  // ✔ Открытие без подтверждения браузера
-  location.href = row.url;
+      block.appendChild(a);
+    });
+  });
 }
 
 /*************************************************
- * Навигация по страницам меню
+ * Навигация
  *************************************************/
-
-function openPage(page) {
-  window.location.href = page + ".html";
-}
-
 function goBack() {
-  window.location.href = "admin_menu.html";
+  location.href = "admin_menu.html";
 }
 
 function logout() {
   localStorage.removeItem("trainer");
-  window.location.href = "login.html";
+  location.href = "login.html";
 }
