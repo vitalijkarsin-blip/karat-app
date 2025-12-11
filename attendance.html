@@ -28,12 +28,20 @@
 
   
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbydYQAoOMHlIAEZIsSUu3sNALYsltItXaBrc6qYHkUdmRvbfgIAutkhgV1Yowpw46WmFg/exec"; // ← заменяем
 
-  const trainerId = localStorage.getItem("trainer_id");
-if (!trainerId) {
+  // 🔥 Правильная проверка авторизации
+const trainerData = localStorage.getItem("trainer");
+if (!trainerData) {
     window.location.href = "login.html";
 }
+
+// Разбираем объект тренера
+const trainer = JSON.parse(trainerData);
+const trainerId = trainer.trainer_id;
+  
+const API_URL = "https://script.google.com/macros/s/AKfycbydYQAoOMHlIAEZIsSUu3sNALYsltItXaBrc6qYHkUdmRvbfgIAutkhgV1Yowpw46WmFg/exec"; // ← заменяем
+
+ 
 
 
 
