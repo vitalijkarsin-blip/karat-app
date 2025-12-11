@@ -1,76 +1,154 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-<meta charset="UTF-8">
-<title>Меню администратора</title>
-<link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KARAT — Меню администратора</title>
+  <link rel="manifest" href="manifest.json">
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f6f6f6;
+      margin: 0;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .admin-info {
+      font-size: 18px;
+      font-weight: bold;
+      margin-bottom: 5px;
+      color: #444;
+    }
+
+    h1 {
+      margin-bottom: 25px;
+      font-size: 28px;
+    }
+
+    .menu {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      max-width: 400px;
+      margin: 0 auto;
+    }
+
+    .btn {
+      padding: 15px;
+      background: #ffffff;
+      border-radius: 12px;
+      border: 2px solid #333;
+      font-size: 18px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: 0.2s;
+      text-decoration: none;
+      color: #000;
+      display: block;
+    }
+
+    .btn:hover {
+      background: #eaeaea;
+    }
+
+    .section {
+      margin-top: 30px;
+      font-size: 20px;
+      font-weight: bold;
+      text-align: left;
+      max-width: 400px;
+      margin-left: auto;
+      margin-right: auto;
+      color: #333;
+    }
+  </style>
 </head>
 
 <body>
 
-<div class="trainer-info">
-    👑 Руководитель: <span id="adminName"></span>
+<!-- ▣ вывод имени администратора -->
+<div id="adminInfo" class="admin-info"></div>
+
+<h1>Меню администратора</h1>
+
+
+<!-- ▣ ВЕДОМОСТИ -->
+<div class="section">📘 Ведомости</div>
+<div class="menu">
+  <a class="btn" onclick="openLink('karatVedom')">Карат</a>
+  <a class="btn" onclick="openLink('krasnVedom')">Краснотурьинск</a>
+  <a class="btn" onclick="openLink('maugliVedom')">Маугли</a>
+  <a class="btn" onclick="openLink('stretchVedom')">Стретчинг</a>
+  <a class="btn" onclick="openLink('commonVedom')">🔥 Общая ведомость / Доход</a>
 </div>
 
-<h2>Меню администратора</h2>
+
+<!-- ▣ ВЗНОСЫ -->
+<div class="section">💳 Взносы</div>
+<div class="menu">
+  <a class="btn" onclick="openLink('karatFees')">Карат — взносы</a>
+  <a class="btn" onclick="openLink('krasnFees')">Краснотурьинск — взносы</a>
+  <a class="btn" onclick="openLink('maugliFees')">Маугли — взносы</a>
+</div>
 
 
-<!-- ВЕДОМОСТИ -->
-<h3>📘 Ведомости</h3>
-
-<button class="menu-btn" onclick="openLink('karatVedom')">Карат</button>
-<button class="menu-btn" onclick="openLink('krasnVedom')">Краснотурьинск</button>
-<button class="menu-btn" onclick="openLink('maugliVedom')">Маугли</button>
-<button class="menu-btn" onclick="openLink('stretchVedom')">Стретчинг</button>
-<button class="menu-btn important" onclick="openLink('commonVedom')">🔥 Общая ведомость / Доход</button>
-
-
-<!-- ВЗНОСЫ -->
-<h3>💳 Взносы</h3>
-
-<button class="menu-btn" onclick="openLink('karatFees')">Карат — взносы</button>
-<button class="menu-btn" onclick="openLink('krasnFees')">Краснотурьинск — взносы</button>
-<button class="menu-btn" onclick="openLink('maugliFees')">Маугли — взносы</button>
+<!-- ▣ ПОСЕЩАЕМОСТЬ -->
+<div class="section">🗂 Посещаемость</div>
+<div class="menu">
+  <a class="btn" onclick="openLink('karatAttend')">Карат</a>
+  <a class="btn" onclick="openLink('krasnAttend')">Краснотурьинск</a>
+  <a class="btn" onclick="openLink('maugliAttend')">Маугли</a>
+</div>
 
 
-
-<!-- ПОСЕЩАЕМОСТЬ -->
-<h3>🗂 Посещаемость</h3>
-
-<button class="menu-btn" onclick="openLink('karatAttend')">Карат</button>
-<button class="menu-btn" onclick="openLink('krasnAttend')">Краснотурьинск</button>
-<button class="menu-btn" onclick="openLink('maugliAttend')">Маугли</button>
+<!-- ▣ ДЕТИ -->
+<div class="section">🧒 Список детей</div>
+<div class="menu">
+  <a class="btn" onclick="openLink('kidsCommon')">Общая база детей</a>
+</div>
 
 
-<!-- ДЕТИ -->
-<h3>🧒 Список детей</h3>
-
-<button class="menu-btn" onclick="openLink('kidsCommon')">Общая база детей</button>
-
-
-<!-- ЗАКАЗ ТОВАРОВ -->
-<h3>📦 Заказ товаров</h3>
-
-<button class="menu-btn" onclick="openLink('orderForm')">Форма заказа товаров</button>
+<!-- ▣ ЗАКАЗ ТОВАРОВ -->
+<div class="section">📦 Заказ товаров</div>
+<div class="menu">
+  <a class="btn" onclick="openLink('orderForm')">Форма заказа товаров</a>
+</div>
 
 
-<!-- АНАЛИТИКА -->
-<h3>📈 Аналитика</h3>
-
-<button class="menu-btn" onclick="openLink('monitoring')">Мониторинг нормативов</button>
-
-
-<!-- ТРЕНЕРЫ -->
-<h3>👥 Тренеры</h3>
-
-<button class="menu-btn" onclick="openLink('trainersList')">Список тренеров</button>
+<!-- ▣ АНАЛИТИКА -->
+<div class="section">📈 Аналитика</div>
+<div class="menu">
+  <a class="btn" onclick="openLink('monitoring')">Мониторинг нормативов</a>
+</div>
 
 
-<!-- ВЫХОД -->
-<button class="menu-btn exit" onclick="logout()">🚪 Выйти</button>
+<!-- ▣ ТРЕНЕРЫ -->
+<div class="section">👥 Тренеры</div>
+<div class="menu">
+  <a class="btn" onclick="openLink('trainersList')">Список тренеров</a>
+</div>
+
+
+<!-- ▣ ВЫХОД -->
+<div class="menu">
+  <a class="btn" onclick="logout()">🚪 Выйти</a>
+</div>
 
 
 <script src="admin_menu.js"></script>
+
+<script>
+  const adminData = localStorage.getItem("trainer");
+  if (!adminData) {
+      window.location.href = "login.html";
+  }
+
+  const admin = JSON.parse(adminData);
+  document.getElementById("adminInfo").innerText =
+      "👑 Руководитель: " + (admin.name || "Без имени");
+</script>
 
 </body>
 </html>
