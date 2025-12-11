@@ -2,29 +2,30 @@
  * ADMIN MENU — загрузка AdminTables + роуты
  *************************************************/
 
-const API_URL = "YOUR_WEB_APP_URL/exec";  // <-- сюда вставь свой URL
+const API_URL = "YOUR_WEB_APP_URL/exec";  // <-- вставь свой URL сюда
 
 let ADMIN_TABLES = null;
 
 /*************************************************
  * Проверка авторизации и роли
  *************************************************/
-(function() {
+(function () {
   const trainerData = localStorage.getItem("trainer");
+
   if (!trainerData) {
     window.location.href = "login.html";
     return;
   }
 
   const trainer = JSON.parse(trainerData);
-  
+
   if (trainer.role !== "admin") {
     alert("Доступ только для администратора");
     window.location.href = "index.html";
     return;
   }
 
-  // отобразим имя
+  // отображение имени администратора
   const info = document.getElementById("adminInfo");
   if (info) info.innerText = "👑 Руководитель: " + trainer.name;
 
@@ -42,14 +43,15 @@ function loadAdminTables() {
         console.error("AdminTables ERROR:", json);
         return;
       }
+
       ADMIN_TABLES = json.tables;
-      console.log("AdminTables loaded:", ADMIN_TABLES);
+      console.log("AdminTables загружены:", ADMIN_TABLES);
     })
     .catch(err => console.error(err));
 }
 
 /*************************************************
- * Открытие ссылки по ID из AdminTables
+ * Открытие ссылки по ID (без окна подтверждения)
  *************************************************/
 function openLink(id) {
   if (!ADMIN_TABLES) {
@@ -69,11 +71,12 @@ function openLink(id) {
     return;
   }
 
-  window.open(row.url, "_blank");
+  // ✔ Открытие без подтверждения браузера
+  location.href = row.url;
 }
 
 /*************************************************
- * Навигация между подменю
+ * Навигация по страницам меню
  *************************************************/
 
 function openPage(page) {
@@ -88,4 +91,3 @@ function logout() {
   localStorage.removeItem("trainer");
   window.location.href = "login.html";
 }
-
