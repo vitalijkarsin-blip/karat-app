@@ -26,39 +26,42 @@ let ADMIN_TABLES = null;
 })();
 
 /*************************************************
- * Загрузка таблицы
+ * Загрузка AdminTables
  *************************************************/
 function loadAdminTables() {
   fetch(API_URL + "?admintables=1")
     .then(r => r.json())
     .then(json => {
       ADMIN_TABLES = json.tables;
-      renderLinks();
+      console.log("AdminTables загружены:", ADMIN_TABLES);
     })
     .catch(err => console.error(err));
 }
 
 /*************************************************
- * Автоматическое создание <a href="...">
+ * Открытие ссылки по ID (без подтверждения)
  *************************************************/
-function renderLinks() {
-  const blocks = document.querySelectorAll("[data-block]");
+function openLink(id) {
+  if (!ADMIN_TABLES) {
+    alert("Данные ещё загружаются...");
+    return;
+  }
 
-  blocks.forEach(block => {
-    const blockName = block.dataset.block;
+  const row = ADMIN_TABLES.find(r => String(r.id) === String(id));
 
-    // фильтруем строки таблицы
-    const rows = ADMIN_TABLES.filter(r => r.block === blockName);
+  if (!row || !row.url) {
+    alert("Ссылка не найдена: " + id);
+    return;
+  }
 
-    rows.forEach(row => {
-      const a = document.createElement("a");
-      a.className = "btn";
-      a.href = row.url;               // ❤️ А ВОТ ОНО — обычная ссылка!
-      a.innerText = row.title;
-
-      block.appendChild(a);
-    });
-  });
+  // Открываем ссылку как будто нажали реальную кнопку
+  const a = document.createElement("a");
+  a.href = row.url;
+  a.target = "_blank";
+  a.rel = "noopener noreferrer";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
 }
 
 /*************************************************
@@ -66,6 +69,10 @@ function renderLinks() {
  *************************************************/
 function goBack() {
   location.href = "admin_menu.html";
+}
+
+function openPage(page) {
+  location.href = page + ".html";
 }
 
 function logout() {
