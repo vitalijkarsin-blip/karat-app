@@ -1,40 +1,33 @@
-<h3>👑 Руководитель: <span id="adminName"></span></h3>
+
+<div class="trainer-info">
+    👑 Руководитель: <span id="adminName"></span>
+</div>
+
 <h2>Меню администратора</h2>
 
-<div class="menu-block">
-  <h3>Ведомости</h3>
-  <button onclick="openLink('karatVedom')">Карат</button>
-  <button onclick="openLink('krasnVedom')">Краснотурьинск</button>
-  <button onclick="openLink('maugliVedom')">Маугли</button>
-  <button onclick="openLink('stretchVedom')">Стретчинг</button>
-  <button onclick="openLink('commonVedom')" class="important">Общая ведомость</button>
-</div>
+<!-- Ведомости -->
+<button class="menu-btn" onclick="openLink('karatVedom')">📘 Карат</button>
+<button class="menu-btn" onclick="openLink('krasnVedom')">📙 Краснотурьинск</button>
+<button class="menu-btn" onclick="openLink('maugliVedom')">📗 Маугли</button>
+<button class="menu-btn" onclick="openLink('stretchVedom')">📕 Стретчинг</button>
+<button class="menu-btn important" onclick="openLink('commonVedom')">🔥 Общая ведомость</button>
 
-<div class="menu-block">
-  <h3>Посещаемость</h3>
-  <button onclick="openLink('karatAttend')">Карат</button>
-  <button onclick="openLink('krasnAttend')">Краснотурьинск</button>
-  <button onclick="openLink('maugliAttend')">Маугли</button>
-</div>
+<!-- Посещаемость -->
+<button class="menu-btn" onclick="openLink('karatAttend')">👥 Карат — посещаемость</button>
+<button class="menu-btn" onclick="openLink('krasnAttend')">👥 Краснотурьинск — посещаемость</button>
+<button class="menu-btn" onclick="openLink('maugliAttend')">👥 Маугли — посещаемость</button>
 
-<div class="menu-block">
-  <h3>Список детей</h3>
-  <button onclick="openLink('kidsCommon')">Общая база детей</button>
-</div>
+<!-- Дети -->
+<button class="menu-btn" onclick="openLink('kidsCommon')">🧒 Общая база детей</button>
 
-<div class="menu-block">
-  <h3>Заказ товаров</h3>
-  <button onclick="openLink('orderForm')">Форма заказа</button>
-</div>
+<!-- Заказ товаров -->
+<button class="menu-btn" onclick="openLink('orderForm')">📦 Заказ товаров</button>
 
-<div class="menu-block">
-  <h3>Аналитика</h3>
-  <button onclick="openLink('monitoring')">Мониторинг нормативов</button>
-</div>
+<!-- Аналитика -->
+<button class="menu-btn" onclick="openLink('monitoring')">📈 Мониторинг нормативов</button>
 
-<div class="menu-block">
-  <h3>Тренеры</h3>
-  <button onclick="openLink('trainersList')">Список тренеров</button>
-</div>
+<!-- Тренеры -->
+<button class="menu-btn" onclick="openLink('trainersList')">👥 Список тренеров</button>
 
-<button class="exit-btn" onclick="logout()">Выйти</button>
+<!-- Выход -->
+<button class="menu-btn exit" onclick="logout()">🚪 Выйти</button>
