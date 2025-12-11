@@ -15,8 +15,16 @@
       text-align: center;
     }
 
+    .trainer-info {
+      font-size: 18px;
+      font-weight: bold;
+      margin-bottom: 5px;
+      color: #444;
+    }
+
     h1 {
-      margin-bottom: 30px;
+      margin-bottom: 25px;
+      font-size: 28px;
     }
 
     .menu {
@@ -48,52 +56,44 @@
 
 <body>
 
-<!-- 🔥 Правильная проверка авторизации -->
-<script>
-  const trainerData = localStorage.getItem("trainer");
-  if (!trainerData) {
-      window.location.href = "login.html";
-  }
-</script>
+<!-- ▣ вывод имени тренера -->
+<div id="trainerInfo" class="trainer-info"></div>
 
 <h1>Меню тренера</h1>
 
 <div class="menu">
-
-  <!-- Блок 1: Месяца и журнал -->
   <a class="btn" href="current.html">📘 Текущий месяц</a>
   <a class="btn" href="previous.html">📙 Прошлый месяц</a>
   <a class="btn" href="attendance.html">👥 Журнал посещаемости</a>
 
-  <!-- Блок 2: Финансы -->
   <a class="btn" href="salary.html">💰 Зарплата за месяц</a>
 
-  <!-- Блок 3: Формы -->
   <a class="btn" href="forms.html">📝 Формы и отчёты</a>
-
-  <!-- Блок 4: Информация -->
   <a class="btn" href="stock.html">📦 Наличие товара</a>
   <a class="btn" href="kids.html">🧒 Список детей</a>
   <a class="btn" href="results.html">🏆 Мониторинг</a>
 
-  <!-- Блок 5: Связь -->
   <a class="btn" href="contact.html">❓ Связаться с администратором</a>
 
-  <!-- Выход -->
-  <button class="btn" onclick="logout()">🚪 Выйти</button>
-
+  <a class="btn" href="exit.html">🚪 Выйти</a>
 </div>
 
 <script>
-  // Service Worker
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js');
+  // Проверяем авторизацию
+  const trainerData = localStorage.getItem("trainer");
+  if (!trainerData) {
+      window.location.href = "login.html";
   }
 
-  // Функция выхода
-  function logout() {
-    localStorage.clear();
-    window.location.href = "login.html";
+  // Если авторизован → показываем ФИО
+  const trainer = JSON.parse(trainerData);
+
+  document.getElementById("trainerInfo").innerText =
+      "👤 Тренер: " + (trainer.name || "Без имени");
+
+  // SW для PWA
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js');
   }
 </script>
 
