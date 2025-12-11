@@ -1,21 +1,26 @@
 /*************************************************
- * ADMIN MENU — загрузка AdminTables + роуты
+ * ADMIN MENU — проверки + загрузка AdminTables
  *************************************************/
 
 const API_URL = "YOUR_WEB_APP_URL/exec"; 
 let ADMIN_TABLES = null;
 
 /*************************************************
- * Проверка роли
+ * Проверка роли администратора
  *************************************************/
 (function () {
   const data = localStorage.getItem("trainer");
-  if (!data) { location.href = "login.html"; return; }
+
+  if (!data) {
+    location.href = "login.html";
+    return;
+  }
 
   const user = JSON.parse(data);
-  if (user.role !== "admin") { 
+
+  if (user.role !== "admin") {
     alert("Доступ запрещён");
-    location.href = "index.html"; 
+    location.href = "index.html";
     return;
   }
 
@@ -26,37 +31,37 @@ let ADMIN_TABLES = null;
 })();
 
 /*************************************************
- * Загрузка AdminTables
+ * Загрузка AdminTables и сохранение в localStorage
  *************************************************/
 function loadAdminTables() {
   fetch(API_URL + "?admintables=1")
     .then(r => r.json())
     .then(json => {
       ADMIN_TABLES = json.tables;
+      
+      // Сохраняем таблицу локально, чтобы ved_*.html могли её использовать
+      localStorage.setItem("adminTables", JSON.stringify(ADMIN_TABLES));
+
       console.log("AdminTables загружены:", ADMIN_TABLES);
     })
     .catch(err => console.error(err));
 }
 
 /*************************************************
- * Открытие ссылки по ID (без подтверждения)
+ * Открытие формы или страницы (локальной)
  *************************************************/
-function openLink(id) {
-  if (!ADMIN_TABLES) {
-    alert("Данные ещё загружаются...");
-    return;
-  }
+function openPage(page) {
+  location.href = page + ".html";
+}
 
-  const row = ADMIN_TABLES.find(r => String(r.id) === String(id));
-
-  if (!row || !row.url) {
-    alert("Ссылка не найдена: " + id);
-    return;
-  }
-
-  // Открываем ссылку как будто нажали реальную кнопку
+/*************************************************
+ * Открытие внешней ссылки (если нужно где-то)
+ * ДЕЛАТЬ ТАК НЕ БУДЕМ ДЛЯ ВЕДОМОСТЕЙ,
+ * оставлено для совместимости.
+ *************************************************/
+function openExternal(url) {
   const a = document.createElement("a");
-  a.href = row.url;
+  a.href = url;
   a.target = "_blank";
   a.rel = "noopener noreferrer";
   document.body.appendChild(a);
@@ -65,16 +70,15 @@ function openLink(id) {
 }
 
 /*************************************************
- * Навигация
+ * Назад в меню
  *************************************************/
 function goBack() {
   location.href = "admin_menu.html";
 }
 
-function openPage(page) {
-  location.href = page + ".html";
-}
-
+/*************************************************
+ * Выход
+ *************************************************/
 function logout() {
   localStorage.removeItem("trainer");
   location.href = "login.html";
