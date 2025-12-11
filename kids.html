@@ -24,9 +24,13 @@
       color: #333;
       font-weight: bold;
     }
-    .back-btn:hover { opacity: 0.7; }
+    .back-btn:hover {
+      opacity: 0.7;
+    }
 
-    h1 { margin: 0 0 15px 0; }
+    h1 { 
+      margin: 0 0 15px 0; 
+    }
 
     iframe { 
       flex: 1; 
@@ -41,7 +45,6 @@
     }
   </style>
 </head>
-
 <body>
 
 <div class="back-btn" onclick="window.location.href='index.html'">⬅ Назад в меню</div>
@@ -58,25 +61,11 @@ if (!trainerData) {
 }
 
 const trainer = JSON.parse(trainerData);
+const kidsURL = trainer.kids_table; // ссылка из Apps Script
 
-// Берём ссылку из CRM
-let kidsURL = trainer.kids_table;
-
-// Превращаем edit → pubhtml
-if (kidsURL.includes("/edit")) {
-    kidsURL = kidsURL.replace("/edit", "/pubhtml");
-}
-
-// Обрезаем всё после "#"
-kidsURL = kidsURL.split("#")[0];
-
-// Вставляем ПРАВИЛЬНЫЙ gid = 0 (первый лист)
-const finalURL = kidsURL + "?gid=0&single=true&widget=true&headers=false";
-
-// Загружаем в iframe
+// Вставляем таблицу в iframe
 const frame = document.getElementById("kidsFrame");
-frame.src = finalURL;
-
+frame.src = kidsURL + "&gid=0";
 frame.onload = () => {
     document.getElementById("loading").style.display = "none";
     frame.style.display = "block";
