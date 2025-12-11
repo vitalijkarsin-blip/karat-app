@@ -16,27 +16,7 @@
 
     h1 {
       font-size: 26px;
-      margin-bottom: 20px;
-    }
-
-    .btn {
-      display: block;
-      width: 100%;
-      max-width: 400px;
-      margin: 10px auto;
-      padding: 14px;
-      background: #ffffff;
-      border-radius: 12px;
-      border: 2px solid #333;
-      text-decoration: none;
-      font-size: 18px;
-      font-weight: bold;
-      color: #000;
-      transition: 0.2s;
-    }
-
-    .btn:hover {
-      background: #eaeaea;
+      margin-bottom: 25px;
     }
 
     .back-btn {
@@ -44,29 +24,46 @@
       margin-bottom: 20px;
       font-size: 16px;
       color: #007aff;
+      text-decoration: none;
       cursor: pointer;
     }
 
-    .container {
+    .menu {
+      max-width: 400px;
+      margin: 0 auto;
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 15px;
+    }
+
+    .btn {
+      padding: 15px;
+      background: #ffffff;
+      border-radius: 12px;
+      border: 2px solid #333;
+      font-size: 18px;
+      font-weight: bold;
+      color: #000;
+      text-decoration: none;
+      display: block;
+      transition: 0.2s;
+    }
+
+    .btn:hover {
+      background: #eaeaea;
     }
   </style>
 </head>
 
 <body>
 
-<!-- кнопка назад -->
-<div class="back-btn" onclick="goBack()">← В главное меню</div>
+<a class="back-btn" onclick="goBack()">← В главное меню</a>
 
-<h1>Карат - Ведомости</h1>
+<h1>Ведомости</h1>
 
-<!-- авто-вставка ссылок на ведомости -->
-<div class="container" data-block="statements"></div>
+<!-- Контейнер, куда admin.js вставит кнопки -->
+<div class="menu" data-block="statements"></div>
 
-
-<!-- подключаем admin.js -->
 <script src="admin.js"></script>
 
 </body>
