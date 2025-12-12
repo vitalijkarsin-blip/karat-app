@@ -55,46 +55,45 @@
 
 
 <script>
-  // 1. URL Apps Script
-  const API_URL = "https://script.google.com/macros/s/AKfycbydYQAoOMHlIAEZIsSUu3sNALYsltItXaBrc6qYHkUdmRvbfgIAutkhgV1Yowpw46WmFg/exec";
-  const ADMIN_ID = "karatVedom";
+const API_URL = "https://script.google.com/macros/s/AKfycbydYQAoOMHlIAEZIsSUu3sNALYsltItXaBrc6qYHkUdmRvbfgIAutkhgV1Yowpw46WmFg/exec";
+const ADMIN_ID = "karatVedom";
 
-  const frame   = document.getElementById("frame");
-  const loading = document.getElementById("loading");
+const frame   = document.getElementById("frame");
+const loading = document.getElementById("loading");
 
-  // 2. Загружаем AdminTables
-  fetch(API_URL + "?admintables=1")
-    .then(r => r.json())
-    .then(data => {
-      const tables = data.tables || [];
-      console.log("AdminTables:", tables);
+// Загружаем AdminTables
+fetch(API_URL + "?admintables=1")
+  .then(r => r.json())
+  .then(data => {
+    const tables = data.tables || [];
+    const row = tables.find(t => t.id === ADMIN_ID);
 
-      const row = tables.find(t => t.id === ADMIN_ID);
-      if (!row) {
-        loading.textContent = "Ссылка не найдена.";
-        return;
-      }
+    if (!row) {
+      loading.textContent = "Ссылка не найдена.";
+      return;
+    }
 
-      // 3. Приводим URL в нормальный вид для iframe
-      let url = row.url;
+    let url = row.url;
 
-      // делаем корректный просмотр с заголовками/фильтрами
-      url = url
-        .replace("/edit", "/htmlview?rm=demo")   // <-- главное улучшение
-        .replace("#gid=", "&gid=");
+    // Нормализуем ссылку: edit + корректный gid
+    // Убираем #gid= и заменяем на ?gid= (iframe любит такой вариант)
+    url = url.replace("#gid=", "?gid=");
 
-      frame.src = url;
+    console.log("Открываем ссылку:", url);
 
-      frame.onload = () => {
-        loading.style.display = "none";
-        frame.style.display   = "block";
-      };
-    })
-    .catch(err => {
-      console.error(err);
-      loading.textContent = "Ошибка загрузки ссылки.";
-    });
+    frame.src = url;
+
+    frame.onload = () => {
+      loading.style.display = "none";
+      frame.style.display = "block";
+    };
+  })
+  .catch(err => {
+    console.error(err);
+    loading.textContent = "Ошибка загрузки.";
+  });
 </script>
+
 
 
 </body>
