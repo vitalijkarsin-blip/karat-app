@@ -54,15 +54,15 @@
 <iframe id="frame"></iframe>
 
 
-  <script>
-  // 1. ТВОЙ URL Apps Script (как в логине/зарплате)
-  const API_URL = "https://script.google.com/macros/s/AKfycbydYQAoOMHlIAEZIsSUu3sNALYsltItXaBrc6qYHkUdmRvbfgIAutkhgV1Yowpw46WmFg/exec"; // <-- сюда твой /exec
+<script>
+  // 1. URL Apps Script
+  const API_URL = "https://script.google.com/macros/s/AKfycbydYQAoOMHlIAEZIsSUu3sNALYsltItXaBrc6qYHkUdmRvbfgIAutkhgV1Yowpw46WmFg/exec";
   const ADMIN_ID = "karatVedom";
 
   const frame   = document.getElementById("frame");
   const loading = document.getElementById("loading");
 
-  // 2. Тянем AdminTables напрямую
+  // 2. Загружаем AdminTables
   fetch(API_URL + "?admintables=1")
     .then(r => r.json())
     .then(data => {
@@ -75,9 +75,13 @@
         return;
       }
 
-      // 3. Чуть чищаем ссылку под iframe
+      // 3. Приводим URL в нормальный вид для iframe
       let url = row.url;
-      url = url.replace("/edit", "/preview").replace("#gid=", "?gid=");
+
+      // делаем корректный просмотр с заголовками/фильтрами
+      url = url
+        .replace("/edit", "/htmlview?rm=demo")   // <-- главное улучшение
+        .replace("#gid=", "&gid=");
 
       frame.src = url;
 
@@ -91,8 +95,6 @@
       loading.textContent = "Ошибка загрузки ссылки.";
     });
 </script>
-  
-
 
 
 </body>
