@@ -6,64 +6,91 @@
 <title>KARAT — Вход</title>
 
 <style>
-body{font-family:Arial;background:#f6f6f6;padding:20px;text-align:center}
-input{padding:12px;font-size:18px;width:80%;max-width:300px;margin-bottom:15px;border-radius:8px;border:1px solid #888}
-button{padding:12px 20px;font-size:18px;border-radius:8px;border:none;background:#333;color:#fff;cursor:pointer}
-button:hover{background:#555}
-.error{margin-top:15px;color:red;font-weight:bold}
+  body {
+    font-family: Arial, sans-serif;
+    background: #f6f6f6;
+    padding: 20px;
+    text-align: center;
+  }
+  input {
+    padding: 12px;
+    font-size: 18px;
+    width: 80%;
+    max-width: 300px;
+    margin-bottom: 15px;
+    border-radius: 8px;
+    border: 1px solid #888;
+  }
+  button {
+    padding: 12px 20px;
+    font-size: 18px;
+    border-radius: 8px;
+    border: none;
+    background: #333;
+    color: #fff;
+    cursor: pointer;
+  }
+  button:hover {
+    background: #555;
+  }
+  .error {
+    margin-top: 15px;
+    color: red;
+    font-weight: bold;
+  }
 </style>
 </head>
 
 <body>
 
-<h2>Вход</h2>
+<h2>Вход для тренеров</h2>
 
 <input id="phone" type="tel" placeholder="Введите номер телефона">
+
 <br>
-<button onclick="login()">Войти</button>
+<button id="loginBtn">Войти</button>
+
 <div class="error" id="error"></div>
 
 <script>
 const API = "https://script.google.com/macros/s/AKfycbydYQAoOMHlIAEZIsSUu3sNALYsltItXaBrc6qYHkUdmRvbfgIAutkhgV1Yowpw46WmFg/exec";
 
+// --- Функция авторизации ---
 async function login() {
-  const phone = document.getElementById("phone").value.trim();
-  const errorBox = document.getElementById("error");
-  errorBox.innerText = "";
+    const phone = document.getElementById("phone").value.trim();
+    const errorBox = document.getElementById("error");
+    errorBox.innerText = ""; // очистить ошибку
 
-  if (!phone) {
-    errorBox.innerText = "Введите номер";
-    return;
-  }
-
-  try {
-    const res = await fetch(`${API}?login=1&phone=${encodeURIComponent(phone)}`);
-    const data = await res.json();
-    console.log("LOGIN RAW:", data);
-
-    if (!data || data.found !== true) {
-      errorBox.innerText = "Неверный номер";
-      return;
+    if (!phone) {
+        errorBox.innerText = "Введите номер";
+        return;
     }
 
-    // ЖЁСТКАЯ НОРМАЛИЗАЦИЯ
-    const auth = {
-      role: data.role === "admin" || data.admin === true ? "admin" : "coach",
-      trainer_id: data.trainer_id || data.id || "",
-      name: data.name || data.FIO || data.fio || "Без имени"
-    };
+    try {
+        const res = await fetch(`${API}?login=1&phone=${encodeURIComponent(phone)}`);
+        const data = await res.json();
 
-    localStorage.setItem("auth", JSON.stringify(auth));
+        console.log("Ответ API:", data);
 
-    window.location.href = auth.role === "admin"
-      ? "admin_menu.html"
-      : "index.html";
+        if (!data.ok || !data.found) {
+            errorBox.innerText = "Неверный номер";
+            return;
+        }
 
-  } catch (e) {
-    console.error(e);
-    errorBox.innerText = "Ошибка соединения";
-  }
+        // Сохраняем данные тренера
+        localStorage.setItem("trainer", JSON.stringify(data));
+
+        // Переход в меню
+        window.location.href = "index.html";
+
+    } catch (err) {
+        console.error(err);
+        errorBox.innerText = "Ошибка соединения";
+    }
 }
+
+// --- Привязываем кнопку ---
+document.getElementById("loginBtn").addEventListener("click", login);
 </script>
 
 </body>
