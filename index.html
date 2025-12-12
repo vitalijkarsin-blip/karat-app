@@ -81,10 +81,12 @@
 
 <script>
 const auth = JSON.parse(localStorage.getItem("auth"));
+
 if (!auth || auth.role !== "coach") {
   window.location.href = "login.html";
 }
 </script>
+
 
   
 <script>
