@@ -6,29 +6,12 @@
   <title>Формы и отчёты</title>
 
   <style>
-.btn {
-    display: block;
-    max-width: 300px;     /* фиксированная видимая ширина */
-    width: 90%;          /* но не ломается на телефонах */
-    margin: 0 auto;       /* центрирование */
-    padding: 15px;
-    border-radius: 12px;
-    border: 2px solid #333;
-    background: #fff;
-    font-size: 18px;
-    font-weight: bold;
-    text-align: center;
-    cursor: pointer;
-    transition: 0.2s;
-}
-
-    
     body {
       font-family: Arial, sans-serif;
       background: #f6f6f6;
       padding: 20px;
     }
- 
+
     a.back {
       display: inline-block;
       margin-bottom: 20px;
@@ -49,15 +32,21 @@
     }
 
     .btn {
-      background: #fff;
+      display: block;
+      max-width: 300px;
+      width: 90%;
+      margin: 0 auto;
       padding: 15px;
       border-radius: 12px;
       border: 2px solid #333;
+      background: #fff;
       font-size: 18px;
+      font-weight: bold;
+      text-align: center;
       cursor: pointer;
+      transition: 0.2s;
       text-decoration: none;
       color: #000;
-      transition: 0.2s;
     }
 
     .btn:hover {
@@ -72,46 +61,41 @@
 
 <h2>Формы и отчёты</h2>
 
-
-  
 <div class="menu">
-  <a id="form_attendance" class="btn" href="#">Форма посещаемости</a>
-<a id="form_salary" class="btn" href="#">Форма оплаты</a>
-<a id="form_delete" class="btn" href="#">Удалить ученика</a>
-<a id="form_order" class="btn" href="#">Форма заказа товаров</a>
-
+  <button class="btn" onclick="openForm('attendance')">Форма посещаемости</button>
+  <button class="btn" onclick="openForm('salary')">Форма оплаты</button>
+  <button class="btn" onclick="openForm('delete')">Удалить ученика</button>
+  <button class="btn" onclick="openForm('order')">Форма заказа товаров</button>
 </div>
 
 <script>
-document.addEventListener("DOMContentLoaded", function () {
-    const trainer = JSON.parse(localStorage.getItem("trainer"));
-    
-    if (!trainer) {
-        alert("Ошибка: данные тренера не найдены. Выполните вход заново.");
-        window.location.href = "index.html";
-        return;
-    }
+const trainer = JSON.parse(localStorage.getItem("trainer"));
 
-    // ссылки
-    const attendance = trainer.form_attendance;
-    const salary     = trainer.form_salary;
-    const del        = trainer.form_delete;
-    const order      = trainer.form_order;
+if (!trainer || trainer.role !== "coach") {
+  window.location.href = "login.html";
+}
 
-    // подставляем
-    document.getElementById("form_attendance").href = attendance || "#";
-    document.getElementById("form_salary").href     = salary || "#";
-    document.getElementById("form_delete").href     = del || "#";
-    document.getElementById("form_order").href      = order || "#";
+// сопоставление ключ → ссылка из trainer
+const FORMS = {
+  attendance: trainer.form_attendance,
+  salary:     trainer.form_salary,
+  delete:     trainer.form_delete,
+  order:      trainer.form_order
+};
 
-    // проверка отсутствующих ссылок
-    if (!attendance || !salary || !del || !order) {
-        console.warn("⚠️ Внимание: в тренере есть пустые ссылки форм.");
-        console.log(trainer);
-    }
-});
+function openForm(key) {
+  const url = FORMS[key];
+
+  if (!url) {
+    alert("Ссылка на форму не найдена.");
+    console.warn("Нет ссылки для:", key, trainer);
+    return;
+  }
+
+  window.location.href =
+    "form_wrapper.html?url=" + encodeURIComponent(url);
+}
 </script>
-
 
 </body>
 </html>
