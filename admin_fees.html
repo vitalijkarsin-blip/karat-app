@@ -6,13 +6,55 @@
   <title>KARAT — Взносы</title>
 
   <style>
-    body { font-family: Arial, sans-serif; background: #f6f6f6; margin: 0; padding: 20px; text-align: center; }
-    .back-btn { position: absolute; left: 15px; top: 15px; background: none; border: none; font-size: 18px; cursor: pointer; }
-    h1 { margin-top: 40px; margin-bottom: 25px; font-size: 28px; }
-    .menu { display: flex; flex-direction: column; gap: 15px; max-width: 400px; margin: 0 auto; }
-    .btn { padding: 15px; background: #ffffff; border-radius: 12px; border: 2px solid #333; font-size: 18px; font-weight: bold;
-           cursor: pointer; transition: 0.2s; text-decoration: none; color: #000; display: block; }
-    .btn:hover { background: #eaeaea; }
+    body { 
+      font-family: Arial, sans-serif; 
+      background: #f6f6f6; 
+      margin: 0; 
+      padding: 20px; 
+      text-align: center; 
+    }
+
+    .back-btn { 
+      position: absolute; 
+      left: 15px; 
+      top: 15px; 
+      background: none; 
+      border: none; 
+      font-size: 18px; 
+      cursor: pointer; 
+    }
+
+    h1 { 
+      margin-top: 40px; 
+      margin-bottom: 25px; 
+      font-size: 28px; 
+    }
+
+    .menu { 
+      display: flex; 
+      flex-direction: column; 
+      gap: 15px; 
+      max-width: 400px; 
+      margin: 0 auto; 
+    }
+
+    .btn { 
+      padding: 15px; 
+      background: #ffffff; 
+      border-radius: 12px; 
+      border: 2px solid #333; 
+      font-size: 18px; 
+      font-weight: bold;
+      cursor: pointer; 
+      transition: 0.2s; 
+      text-decoration: none; 
+      color: #000; 
+      display: block; 
+    }
+
+    .btn:hover { 
+      background: #eaeaea; 
+    }
   </style>
 </head>
 
@@ -23,46 +65,30 @@
 <h1>Взносы</h1>
 
 <div class="menu">
-  <a class="btn" onclick="openFeeForm('karatFees')">Карат — взносы</a>
-  <a class="btn" onclick="openFeeForm('krasnFees')">Краснотурьинск — взносы</a>
-  <a class="btn" onclick="openFeeForm('maugliFees')">Маугли — взносы</a>
+  <button class="btn" onclick="openForm('karatFees')">Карат — взносы</button>
+  <button class="btn" onclick="openForm('krasnFees')">Краснотурьинск — взносы</button>
+  <button class="btn" onclick="openForm('maugliFees')">Маугли — взносы</button>
 </div>
 
+
 <script>
-  const API_URL = "https://script.google.com/macros/s/AKfycbydYQAoOMHlIAEZIsSUu3sNALYsltItXaBrc6qYHkUdmRvbfgIAutkhgV1Yowpw46WmFg/exec";
+/**  
+ * Открывает Google-форму в контейнере admin_form_wrapper.html  
+ */
+function openForm(id) {
+    const adminTables = JSON.parse(localStorage.getItem("AdminTables") || "[]");
+    const row = adminTables.find(r => r.id === id);
 
-  let adminTables = null;
-  let tablesPromise = null;
+    if (!row) {
+        alert("Ошибка: ссылка не найдена.");
+        return;
+    }
 
-  function loadAdminTables() {
-    if (adminTables) return Promise.resolve(adminTables);
-    if (tablesPromise) return tablesPromise;
+    // универсальный вызов контейнера
+    const target = "admin_form_wrapper.html?url=" + encodeURIComponent(row.url);
 
-    tablesPromise = fetch(API_URL + "?admintables=1")
-      .then(r => r.json())
-      .then(data => {
-        adminTables = data.tables || [];
-        return adminTables;
-      });
-
-    return tablesPromise;
-  }
-
-  function openFeeForm(id) {
-    loadAdminTables()
-      .then(tables => {
-        const row = tables.find(r => r.id === id);
-        if (!row || !row.url) {
-          alert("Ссылка для этого раздела не найдена.");
-          return;
-        }
-        window.location.href = row.url;
-      })
-      .catch(err => {
-        console.error(err);
-        alert("Ошибка загрузки ссылок. Попробуйте позже.");
-      });
-  }
+    window.location.href = target;
+}
 </script>
 
 </body>
