@@ -46,7 +46,6 @@
 <h2>Вход</h2>
 
 <input id="phone" type="tel" placeholder="Введите номер телефона">
-
 <br>
 <button id="loginBtn">Войти</button>
 
@@ -55,7 +54,6 @@
 <script>
 const API = "https://script.google.com/macros/s/AKfycbydYQAoOMHlIAEZIsSUu3sNALYsltItXaBrc6qYHkUdmRvbfgIAutkhgV1Yowpw46WmFg/exec";
 
-// --- Функция авторизации ---
 async function login() {
   const phone = document.getElementById("phone").value.trim();
   const errorBox = document.getElementById("error");
@@ -77,12 +75,11 @@ async function login() {
       return;
     }
 
-    // сохраняем как раньше — НИЧЕГО НЕ МЕНЯЕМ
+    // сохраняем сессию
     localStorage.setItem("trainer", JSON.stringify(data));
 
-    // ⬇️ ЕДИНСТВЕННОЕ НОВОЕ МЕСТО
-    // редирект по роли ИЗ API
-    if (data.role && data.role.toLowerCase() === "admin") {
+    // ⛔ АДМИН НЕ ИДЁТ В index.html
+    if (data.role === "admin") {
       window.location.href = "admin_menu.html";
     } else {
       window.location.href = "index.html";
@@ -94,7 +91,6 @@ async function login() {
   }
 }
 
-// --- Привязываем кнопку ---
 document.getElementById("loginBtn").addEventListener("click", login);
 </script>
 
