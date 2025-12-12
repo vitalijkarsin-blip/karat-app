@@ -23,12 +23,38 @@
 <h1>Взносы</h1>
 
 <div class="menu">
-  <a class="btn" onclick="openLink('karatFees')">Карат — взносы</a>
-  <a class="btn" onclick="openLink('krasnFees')">Краснотурьинск — взносы</a>
-  <a class="btn" onclick="openLink('maugliFees')">Маугли — взносы</a>
+  <a class="btn" onclick="openFeeForm('karatFees')">Карат — взносы</a>
+  <a class="btn" onclick="openFeeForm('krasnFees')">Краснотурьинск — взносы</a>
+  <a class="btn" onclick="openFeeForm('maugliFees')">Маугли — взносы</a>
 </div>
 
 <script src="admin.js"></script>
+
+<script>
+/*
+  Для админа мы НЕ используем trainer.*
+  Мы берём ссылки напрямую из AdminTables,
+  которые загружаются в admin.js и сохраняются в window.ADMIN_TABLES.
+*/
+
+function openFeeForm(id) {
+    // AdminTables уже загружены admin.js
+    if (!window.ADMIN_TABLES || !ADMIN_TABLES.length) {
+        alert("⚠️ Таблица ссылок ещё не загружена. Попробуйте обновить страницу.");
+        return;
+    }
+
+    const row = ADMIN_TABLES.find(r => r.id === id);
+
+    if (!row || !row.url) {
+        alert("❌ Ошибка: ссылка не найдена.");
+        return;
+    }
+
+    // просто открываем форму
+    window.location.href = row.url;
+}
+</script>
 
 </body>
 </html>
