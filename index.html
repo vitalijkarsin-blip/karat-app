@@ -78,7 +78,18 @@
   <a class="btn" href="exit.html">🚪 Выйти</a>
 </div>
 
+                                                                          <script>
+                                                                    const trainer = JSON.parse(localStorage.getItem("trainer"));
+                                                                    
+                                                                    if (!trainer || trainer.role !== "coach") {
+                                                                      window.location.href = "login.html";
+                                                                    }
+                                                                    </script>
 
+
+
+
+  
 <script>
 const auth = JSON.parse(localStorage.getItem("auth"));
 
