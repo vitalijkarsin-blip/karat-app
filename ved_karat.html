@@ -11,19 +11,6 @@
       margin: 0;
       padding: 20px;
       background: #f6f6f6;
-      text-align: center;<!DOCTYPE html>
-<html lang="ru">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Карат — Ведомости</title>
-
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 20px;
-      background: #f6f6f6;
       text-align: center;
       display: flex;
       flex-direction: column;
@@ -80,69 +67,6 @@
     frame.style.display = "block";
   };
 </script>
-
-</body>
-</html>
-
-      display: flex;
-      flex-direction: column;
-      height: 100vh;
-      box-sizing: border-box;
-    }
-
-    .back {
-      text-align: left;
-      font-size: 18px;
-      margin-bottom: 10px;
-      cursor: pointer;
-      font-weight: bold;
-      color: #333;
-    }
-
-    h1 {
-      margin: 0 0 15px 0;
-    }
-
-    
-
-    .loading {
-      font-size: 18px;
-      margin-top: 20px;
-    }
-  </style>
-</head>
-<body>
-
-<div class="back" onclick="location.href='admin_vedomosti.html'">⬅ В главное меню</div>
-
-<h1>Карат — Ведомости</h1>
-
-<div id="loading" class="loading">Загрузка таблицы…</div>
-
-
-
-<script src="admin.js"></script>
-<script>
-document.addEventListener("DOMContentLoaded", () => {
-  const loading = document.getElementById("loading");
-
-  const check = setInterval(() => {
-    if (!window.ADMIN_TABLES || !ADMIN_TABLES.length) return;
-
-    clearInterval(check);
-
-    const row = ADMIN_TABLES.find(r => r.id === "karatVedom");
-    if (!row) {
-      loading.textContent = "Ссылка не найдена.";
-      return;
-    }
-
-    loading.textContent = "Открываем ведомость…";
-    window.location.href = row.url;   // просто переходим в таблицу
-  }, 200);
-});
-</script>
-
 
 </body>
 </html>
