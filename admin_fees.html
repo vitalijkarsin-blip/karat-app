@@ -28,32 +28,41 @@
   <a class="btn" onclick="openFeeForm('maugliFees')">Маугли — взносы</a>
 </div>
 
-<script src="admin.js"></script>
-
 <script>
-/*
-  Для админа мы НЕ используем trainer.*
-  Мы берём ссылки напрямую из AdminTables,
-  которые загружаются в admin.js и сохраняются в window.ADMIN_TABLES.
-*/
+  const API_URL = "https://script.google.com/macros/s/AKfycbydYQAoOMHlIAEZIsSUu3sNALYsltItXaBrc6qYHkUdmRvbfgIAutkhgV1Yowpw46WmFg/exec";
 
-function openFeeForm(id) {
-    // AdminTables уже загружены admin.js
-    if (!window.ADMIN_TABLES || !ADMIN_TABLES.length) {
-        alert("⚠️ Таблица ссылок ещё не загружена. Попробуйте обновить страницу.");
-        return;
-    }
+  let adminTables = null;
+  let tablesPromise = null;
 
-    const row = ADMIN_TABLES.find(r => r.id === id);
+  function loadAdminTables() {
+    if (adminTables) return Promise.resolve(adminTables);
+    if (tablesPromise) return tablesPromise;
 
-    if (!row || !row.url) {
-        alert("❌ Ошибка: ссылка не найдена.");
-        return;
-    }
+    tablesPromise = fetch(API_URL + "?admintables=1")
+      .then(r => r.json())
+      .then(data => {
+        adminTables = data.tables || [];
+        return adminTables;
+      });
 
-    // просто открываем форму
-    window.location.href = row.url;
-}
+    return tablesPromise;
+  }
+
+  function openFeeForm(id) {
+    loadAdminTables()
+      .then(tables => {
+        const row = tables.find(r => r.id === id);
+        if (!row || !row.url) {
+          alert("Ссылка для этого раздела не найдена.");
+          return;
+        }
+        window.location.href = row.url;
+      })
+      .catch(err => {
+        console.error(err);
+        alert("Ошибка загрузки ссылок. Попробуйте позже.");
+      });
+  }
 </script>
 
 </body>
