@@ -6,50 +6,21 @@
 <title>KARAT — Вход</title>
 
 <style>
-  body {
-    font-family: Arial, sans-serif;
-    background: #f6f6f6;
-    padding: 20px;
-    text-align: center;
-  }
-  input {
-    padding: 12px;
-    font-size: 18px;
-    width: 80%;
-    max-width: 300px;
-    margin-bottom: 15px;
-    border-radius: 8px;
-    border: 1px solid #888;
-  }
-  button {
-    padding: 12px 20px;
-    font-size: 18px;
-    border-radius: 8px;
-    border: none;
-    background: #333;
-    color: #fff;
-    cursor: pointer;
-  }
-  button:hover {
-    background: #555;
-  }
-  .error {
-    margin-top: 15px;
-    color: red;
-    font-weight: bold;
-  }
+body{font-family:Arial;background:#f6f6f6;padding:20px;text-align:center}
+input{padding:12px;font-size:18px;width:80%;max-width:300px;margin-bottom:15px;border-radius:8px;border:1px solid #888}
+button{padding:12px 20px;font-size:18px;border-radius:8px;border:none;background:#333;color:#fff;cursor:pointer}
+button:hover{background:#555}
+.error{margin-top:15px;color:red;font-weight:bold}
 </style>
 </head>
 
 <body>
 
-<h2>Вход для тренеров</h2>
+<h2>Вход</h2>
 
 <input id="phone" type="tel" placeholder="Введите номер телефона">
-
 <br>
-<button id="loginBtn">Войти</button>
-
+<button onclick="login()">Войти</button>
 <div class="error" id="error"></div>
 
 <script>
@@ -68,34 +39,31 @@ async function login() {
   try {
     const res = await fetch(`${API}?login=1&phone=${encodeURIComponent(phone)}`);
     const data = await res.json();
+    console.log("LOGIN RAW:", data);
 
-    console.log("Ответ API:", data);
-
-    if (!data.ok || !data.found) {
+    if (!data || data.found !== true) {
       errorBox.innerText = "Неверный номер";
       return;
     }
 
-    // сохраняем авторизацию
-    localStorage.setItem("auth", JSON.stringify({
-      role: data.role || (data.admin ? "admin" : "coach"),
+    // ЖЁСТКАЯ НОРМАЛИЗАЦИЯ
+    const auth = {
+      role: data.role === "admin" || data.admin === true ? "admin" : "coach",
       trainer_id: data.trainer_id || data.id || "",
-      name: data.name || data.fio || ""
-    }));
+      name: data.name || data.FIO || data.fio || "Без имени"
+    };
 
-    // редирект по роли
-    const role = (data.role || (data.admin ? "admin" : "coach")).toLowerCase();
-    window.location.href = role === "admin"
+    localStorage.setItem("auth", JSON.stringify(auth));
+
+    window.location.href = auth.role === "admin"
       ? "admin_menu.html"
       : "index.html";
 
-  } catch (err) {
-    console.error(err);
+  } catch (e) {
+    console.error(e);
     errorBox.innerText = "Ошибка соединения";
   }
 }
-
-document.getElementById("loginBtn").addEventListener("click", login);
 </script>
 
 </body>
