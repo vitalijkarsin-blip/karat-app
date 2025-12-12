@@ -55,41 +55,46 @@
 <script>
 const API = "https://script.google.com/macros/s/AKfycbydYQAoOMHlIAEZIsSUu3sNALYsltItXaBrc6qYHkUdmRvbfgIAutkhgV1Yowpw46WmFg/exec";
 
-// --- Функция авторизации ---
 async function login() {
-    const phone = document.getElementById("phone").value.trim();
-    const errorBox = document.getElementById("error");
-    errorBox.innerText = ""; // очистить ошибку
+  const phone = document.getElementById("phone").value.trim();
+  const errorBox = document.getElementById("error");
+  errorBox.innerText = "";
 
-    if (!phone) {
-        errorBox.innerText = "Введите номер";
-        return;
+  if (!phone) {
+    errorBox.innerText = "Введите номер";
+    return;
+  }
+
+  try {
+    const res = await fetch(`${API}?login=1&phone=${encodeURIComponent(phone)}`);
+    const data = await res.json();
+
+    console.log("Ответ API:", data);
+
+    if (!data.ok || !data.found) {
+      errorBox.innerText = "Неверный номер";
+      return;
     }
 
-    try {
-        const res = await fetch(`${API}?login=1&phone=${encodeURIComponent(phone)}`);
-        const data = await res.json();
+    // сохраняем авторизацию
+    localStorage.setItem("auth", JSON.stringify({
+      role: data.role || (data.admin ? "admin" : "coach"),
+      trainer_id: data.trainer_id || data.id || "",
+      name: data.name || data.fio || ""
+    }));
 
-        console.log("Ответ API:", data);
+    // редирект по роли
+    const role = (data.role || (data.admin ? "admin" : "coach")).toLowerCase();
+    window.location.href = role === "admin"
+      ? "admin_menu.html"
+      : "index.html";
 
-        if (!data.ok || !data.found) {
-            errorBox.innerText = "Неверный номер";
-            return;
-        }
-
-        // Сохраняем данные тренера
-        localStorage.setItem("trainer", JSON.stringify(data));
-
-        // Переход в меню
-        window.location.href = "index.html";
-
-    } catch (err) {
-        console.error(err);
-        errorBox.innerText = "Ошибка соединения";
-    }
+  } catch (err) {
+    console.error(err);
+    errorBox.innerText = "Ошибка соединения";
+  }
 }
 
-// --- Привязываем кнопку ---
 document.getElementById("loginBtn").addEventListener("click", login);
 </script>
 
