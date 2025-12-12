@@ -90,7 +90,7 @@
 const API_URL = "https://script.google.com/macros/s/AKfycbydYQAoOMHlIAEZIsSUu3sNALYsltItXaBrc6qYHkUdmRvbfgIAutkhgV1Yowpw46WmFg/exec";
 
 // Загружаем список тренеров
-fetch(API_URL + "?trainersList=1")
+fetch(API_URL + "?trainers=1")
   .then(r => r.json())
   .then(data => {
     if (!data.ok || !data.trainers) {
