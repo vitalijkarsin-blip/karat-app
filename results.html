@@ -62,7 +62,8 @@ const trainer = JSON.parse(trainerData);
 
 // 🔑 ВАЖНО: ссылка должна приходить ИЗ API
 // например: trainer.monitor_table
-const monitorURL = trainer.monitor_table;
+  const monitorURL = trainer.results_table;
+
 
 if (!monitorURL) {
   document.getElementById("loading").textContent =
