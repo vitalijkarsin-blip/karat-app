@@ -70,18 +70,19 @@ async function login() {
     const res = await fetch(`${API}?login=1&phone=${encodeURIComponent(phone)}`);
     const data = await res.json();
 
-    console.log("Ответ API:", data);
+    console.log("LOGIN DATA:", data);
 
     if (!data.ok || !data.found) {
       errorBox.innerText = "Неверный номер";
       return;
     }
 
-    // сохраняем как раньше
+    // сохраняем как раньше — НИЧЕГО НЕ МЕНЯЕМ
     localStorage.setItem("trainer", JSON.stringify(data));
 
-    // редирект по роли
-    if (data.role === "admin") {
+    // ⬇️ ЕДИНСТВЕННОЕ НОВОЕ МЕСТО
+    // редирект по роли ИЗ API
+    if (data.role && data.role.toLowerCase() === "admin") {
       window.location.href = "admin_menu.html";
     } else {
       window.location.href = "index.html";
