@@ -1,20 +1,75 @@
-
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Выход</title>
-  <style>
-    body { font-family: Arial, sans-serif; padding: 20px; }
-    a { text-decoration: none; display: inline-block; margin-bottom: 20px; font-size: 18px; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Выход</title>
+    <style>
+        /* Основные настройки страницы */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Более современный шрифт */
+            margin: 0;
+            padding: 0;
+            height: 100vh; /* Высота на весь экран */
+            display: flex; /* Включаем Flexbox */
+            justify-content: center; /* Центрируем по горизонтали */
+            align-items: center; /* Центрируем по вертикали */
+            background-color: #f0f2f5; /* Приятный светло-серый фон */
+        }
+
+        /* Стили для ссылки "Назад" */
+        a {
+            position: absolute; /* Закрепляем в углу */
+            top: 20px;
+            left: 20px;
+            text-decoration: none;
+            color: #555;
+            font-size: 16px;
+            font-weight: 600;
+            padding: 10px 15px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        a:hover {
+            background-color: #e4e6eb; /* Подсветка при наведении */
+            color: #000;
+        }
+
+        /* Стили для кнопки "Выйти" */
+        .btn {
+            background: linear-gradient(135deg, #ff416c, #ff4b2b); /* Красивый градиент */
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 22px;
+            border-radius: 50px; /* Закругленные края */
+            cursor: pointer;
+            box-shadow: 0 10px 20px rgba(255, 75, 43, 0.3); /* Тень */
+            transition: all 0.3s ease; /* Плавная анимация */
+            display: flex;
+            align-items: center;
+            gap: 10px; /* Отступ между эмодзи и текстом */
+        }
+
+        .btn:hover {
+            transform: translateY(-3px); /* Приподнимается при наведении */
+            box-shadow: 0 15px 25px rgba(255, 75, 43, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(1px); /* Эффект нажатия */
+            box-shadow: 0 5px 10px rgba(255, 75, 43, 0.4);
+        }
+    </style>
 </head>
 <body>
 
-<a href="index.html">⬅ Назад в меню</a>
+    <a href="index.html">⬅ Назад в меню</a>
     
-<button class="btn" onclick="logout()">🚪 Выйти</button>
+    <button class="btn" onclick="logout()">🚪 Выйти</button>
+
+    
 
 <script>
 function logout() {
