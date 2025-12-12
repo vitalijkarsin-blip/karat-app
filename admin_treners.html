@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>KARAT — Тренеры</title>
+  <title>Тренеры</title>
 
   <style>
     body {
@@ -14,12 +14,10 @@
       text-align: center;
     }
 
-    .back-btn {
+    .back {
       position: absolute;
       left: 15px;
       top: 15px;
-      background: none;
-      border: none;
       font-size: 18px;
       cursor: pointer;
     }
@@ -30,99 +28,85 @@
       font-size: 28px;
     }
 
-    .trainer-card {
-      background: #fff;
-      border: 2px solid #333;
+    .trainer {
+      background: white;
       border-radius: 12px;
+      border: 2px solid #333;
       padding: 15px;
-      margin: 10px auto;
-      max-width: 400px;
+      margin: 12px auto;
+      max-width: 380px;
       text-align: left;
     }
 
-    .trainer-name {
+    .name {
       font-size: 20px;
       font-weight: bold;
       margin-bottom: 5px;
     }
 
-    .trainer-city {
-      font-size: 16px;
-      color: #555;
-      margin-bottom: 10px;
-    }
-
-    .actions {
-      display: flex;
-      gap: 10px;
-    }
-
-    .btn-small {
-      flex: 1;
-      padding: 10px;
-      background: #fff;
-      border-radius: 10px;
-      border: 2px solid #333;
-      font-size: 16px;
-      font-weight: bold;
-      cursor: pointer;
+    .actions a {
+      display: inline-block;
+      margin-right: 10px;
       text-decoration: none;
-      color: #000;
-      text-align: center;
+      font-weight: bold;
+      color: #3b49df;
     }
 
-    .btn-small:hover {
-      background: #eaeaea;
-    }
   </style>
 </head>
-
 <body>
 
-<button class="back-btn" onclick="location.href='admin_menu.html'">⬅️ В главное меню</button>
+<div class="back" onclick="location.href='admin_menu.html'">⬅ В главное меню</div>
 
 <h1>Тренеры</h1>
 
-<div id="list">Загрузка списка тренеров…</div>
+<div id="list">Загрузка…</div>
 
 <script>
-// Твой API
 const API_URL = "https://script.google.com/macros/s/AKfycbydYQAoOMHlIAEZIsSUu3sNALYsltItXaBrc6qYHkUdmRvbfgIAutkhgV1Yowpw46WmFg/exec";
 
-// Загружаем список тренеров
-fetch(API_URL + "?trainers=1")
-  .then(r => r.json())
-  .then(data => {
-    if (!data.ok || !data.trainers) {
-      document.getElementById("list").innerText = "Ошибка загрузки данных.";
-      return;
-    }
+document.addEventListener("DOMContentLoaded", () => {
+    loadTrainers();
+});
 
-    const arr = data.trainers;
-    const container = document.getElementById("list");
-    container.innerHTML = "";
+function loadTrainers() {
+    fetch(API_URL + "?trainersList=1")
+      .then(r => r.json())
+      .then(data => {
+        if (!data.ok || !data.trainers) {
+          document.getElementById("list").innerText = "Ошибка загрузки данных.";
+          return;
+        }
 
-    arr.forEach(t => {
-      const card = document.createElement("div");
-      card.className = "trainer-card";
+        renderTrainers(data.trainers);
+      })
+      .catch(err => {
+        console.error(err);
+        document.getElementById("list").innerText = "Ошибка связи с сервером.";
+      });
+}
 
-      card.innerHTML = `
-        <div class="trainer-name">${t.name}</div>
-        <div class="trainer-city">Город: ${t.city}</div>
+function renderTrainers(trainers) {
+    const box = document.getElementById("list");
+    box.innerHTML = "";
 
+    trainers.forEach(t => {
+      const div = document.createElement("div");
+      div.className = "trainer";
+
+      div.innerHTML = `
+        <div class="name">${t.name}</div>
+        <div>Город: ${t.city}</div>
+        <div>Телефон: <b>${t.phone}</b></div>
         <div class="actions">
-          <a class="btn-small" href="tel:${t.phone || ''}">📞 Позвонить</a>
-          <a class="btn-small" href="https://t.me/${(t.telegram || '').replace('@','')}" target="_blank">✉️ Telegram</a>
+          <a href="tel:+7${t.phone}">📞 Позвонить</a>
+          <a href="${t.telegram}" target="_blank">💬 Telegram</a>
         </div>
       `;
 
-      container.appendChild(card);
+      box.appendChild(div);
     });
-  })
-  .catch(err => {
-    console.error(err);
-    document.getElementById("list").innerText = "Ошибка загрузки списка.";
-  });
+}
 </script>
 
 </body>
