@@ -78,18 +78,6 @@
   <a class="btn" href="exit.html">🚪 Выйти</a>
 </div>
 
-   
-  
-<script>
-const auth = JSON.parse(localStorage.getItem("auth"));
-
-if (!auth || auth.role !== "coach") {
-  window.location.href = "login.html";
-}
-</script>
-
-
-  
 <script>
   // Проверяем авторизацию
   const trainerData = localStorage.getItem("trainer");
@@ -103,7 +91,10 @@ if (!auth || auth.role !== "coach") {
   document.getElementById("trainerInfo").innerText =
       "👤 Тренер: " + (trainer.name || "Без имени");
 
- 
+  // SW для PWA
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js');
+  }
 </script>
 
 </body>
