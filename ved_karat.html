@@ -54,19 +54,43 @@
 <iframe id="frame"></iframe>
 
 <script>
-  // ❗ ПРЯМАЯ РАБОТАЮЩАЯ СТАТИЧЕСКАЯ ССЫЛКА
-  const url = "https://docs.google.com/spreadsheets/d/18qSv3pCgevgJ76BA53VYFjOte8FhRiD0xVZ0uK3TYkI/edit#gid=616811179";
+  // 1. ТВОЙ URL Apps Script (как в логине/зарплате)
+  const API_URL = "https://script.google.com/macros/s/XXXXXXXXXXXX/exec"; // <-- сюда твой /exec
+  const ADMIN_ID = "karatVedom";
 
-  const frame = document.getElementById("frame");
+  const frame   = document.getElementById("frame");
   const loading = document.getElementById("loading");
 
-  frame.src = url;
+  // 2. Тянем AdminTables напрямую
+  fetch(API_URL + "?admintables=1")
+    .then(r => r.json())
+    .then(data => {
+      const tables = data.tables || [];
+      console.log("AdminTables:", tables);
 
-  frame.onload = () => {
-    loading.style.display = "none";
-    frame.style.display = "block";
-  };
+      const row = tables.find(t => t.id === ADMIN_ID);
+      if (!row) {
+        loading.textContent = "Ссылка не найдена.";
+        return;
+      }
+
+      // 3. Чуть чищаем ссылку под iframe
+      let url = row.url;
+      url = url.replace("/edit", "/preview").replace("#gid=", "?gid=");
+
+      frame.src = url;
+
+      frame.onload = () => {
+        loading.style.display = "none";
+        frame.style.display   = "block";
+      };
+    })
+    .catch(err => {
+      console.error(err);
+      loading.textContent = "Ошибка загрузки ссылки.";
+    });
 </script>
+
 
 </body>
 </html>
