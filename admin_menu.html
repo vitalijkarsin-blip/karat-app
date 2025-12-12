@@ -83,19 +83,28 @@
 
 <script src="admin.js"></script>
 <script>
-  // ПРОВЕРКА trainerData, НО БЕЗ РЕДИРЕКТА
-  const adminData = localStorage.getItem("trainer");
-  let admin = null;
+const auth = JSON.parse(localStorage.getItem("auth"));
 
-  try {
-      admin = JSON.parse(adminData);
-  } catch(e) {
-      console.warn("Ошибка парсинга trainerData", e);
+// защита админки
+if (!auth || auth.role !== "admin") {
+  window.location.href = "login.html";
+}
+
+// вывод имени администратора
+document.addEventListener("DOMContentLoaded", () => {
+  const name =
+    auth.name ||
+    auth.fio ||
+    auth.FIO ||
+    "Без имени";
+
+  const nameEl = document.getElementById("adminName");
+  if (nameEl) {
+    nameEl.textContent = name;
   }
-
-  document.getElementById("adminInfo").innerText =
-      "👑 Руководитель: " + (admin?.name || "Без имени");
+});
 </script>
+
 
 </body>
 </html>
