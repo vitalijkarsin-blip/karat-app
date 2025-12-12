@@ -53,43 +53,46 @@
 <div id="loading" class="loading">Загрузка таблицы…</div>
 <iframe id="frame"></iframe>
 
-<script>
-document.addEventListener("DOMContentLoaded", () => {
+
+  <script>
+  // 1. ТВОЙ URL Apps Script (как в логине/зарплате)
+  const API_URL = "https://script.google.com/macros/s/AKfycbydYQAoOMHlIAEZIsSUu3sNALYsltItXaBrc6qYHkUdmRvbfgIAutkhgV1Yowpw46WmFg/exec"; // <-- сюда твой /exec
+  const ADMIN_ID = "karatVedom";
+
+  const frame   = document.getElementById("frame");
   const loading = document.getElementById("loading");
 
-  const check = setInterval(() => {
-    if (!window.ADMIN_TABLES || !ADMIN_TABLES.length) return;
+  // 2. Тянем AdminTables напрямую
+  fetch(API_URL + "?admintables=1")
+    .then(r => r.json())
+    .then(data => {
+      const tables = data.tables || [];
+      console.log("AdminTables:", tables);
 
-    clearInterval(check);
+      const row = tables.find(t => t.id === ADMIN_ID);
+      if (!row) {
+        loading.textContent = "Ссылка не найдена.";
+        return;
+      }
 
-    const row = ADMIN_TABLES.find(r => r.id === "karatVedom");
-    if (!row) {
-      loading.textContent = "Ссылка не найдена.";
-      return;
-    }
+      // 3. Чуть чищаем ссылку под iframe
+      let url = row.url;
+      url = url.replace("/edit", "/preview").replace("#gid=", "?gid=");
 
-    loading.textContent = "Загрузка…";
+      frame.src = url;
 
-    const iframe = document.createElement("iframe");
-    iframe.style.flex = "1";
-    iframe.style.width = "100%";
-    iframe.style.border = "none";
-
-    // 🔥 КОРРЕКТНЫЙ РЕЖИМ ПРОСМОТРА КАК У ТРЕНЕРОВ
-    const cleanUrl = row.url
-      .replace("/edit", "/htmlview?rm=demo")
-      .replace("#gid=", "&gid=");
-
-    iframe.src = cleanUrl;
-
-    iframe.onload = () => {
-      loading.style.display = "none";
-    };
-
-    document.body.appendChild(iframe);
-  }, 200);
-});
+      frame.onload = () => {
+        loading.style.display = "none";
+        frame.style.display   = "block";
+      };
+    })
+    .catch(err => {
+      console.error(err);
+      loading.textContent = "Ошибка загрузки ссылки.";
+    });
 </script>
+  
+
 
 
 </body>
