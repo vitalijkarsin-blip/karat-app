@@ -6,14 +6,14 @@
   <title>Мониторинг результатов</title>
 
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 20px;
-      display: flex;
-      flex-direction: column;
-      height: 100vh;
-      box-sizing: border-box;
+    body { 
+      font-family: Arial, sans-serif; 
+      margin: 0; 
+      padding: 20px; 
+      display: flex; 
+      flex-direction: column; 
+      height: 100vh; 
+      box-sizing: border-box; 
     }
 
     .back-btn {
@@ -29,10 +29,16 @@
 
     h1 { margin: 0 0 15px 0; }
 
-    iframe {
-      flex: 1;
-      width: 100%;
-      border: none;
+    iframe { 
+      flex: 1; 
+      width: 100%; 
+      border: none; 
+    }
+
+    .loading {
+      font-size: 18px;
+      text-align: center;
+      margin-top: 20px;
     }
   </style>
 </head>
@@ -42,9 +48,39 @@
 <div class="back-btn" onclick="window.location.href='index.html'">⬅ Назад в меню</div>
 <h1>Мониторинг результатов</h1>
 
-<iframe 
-  src="https://docs.google.com/spreadsheets/d/1zZxbpL0NWperdy1DZWmONieRisxZoc7a52LTZb90aoM/pubhtml?widget=true&headers=false">
-</iframe>
+<div class="loading" id="loading">Загрузка мониторинга…</div>
+<iframe id="monitorFrame" style="display:none;"></iframe>
+
+<script>
+// проверка авторизации
+const trainerData = localStorage.getItem("trainer");
+if (!trainerData) {
+  window.location.href = "login.html";
+}
+
+const trainer = JSON.parse(trainerData);
+
+// 🔑 ВАЖНО: ссылка должна приходить ИЗ API
+// например: trainer.monitor_table
+const monitorURL = trainer.monitor_table;
+
+if (!monitorURL) {
+  document.getElementById("loading").textContent =
+    "Ошибка: ссылка на мониторинг не найдена.";
+  console.warn("Нет monitor_table у тренера", trainer);
+} else {
+  const frame = document.getElementById("monitorFrame");
+
+  // при необходимости — переключение на нужный лист
+  const finalURL = monitorURL.replace(/gid=\d+/, "gid=0");
+
+  frame.src = finalURL;
+  frame.onload = () => {
+    document.getElementById("loading").style.display = "none";
+    frame.style.display = "block";
+  };
+}
+</script>
 
 </body>
 </html>
