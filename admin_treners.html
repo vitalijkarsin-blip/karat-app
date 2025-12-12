@@ -14,10 +14,12 @@
       text-align: center;
     }
 
-    .back {
+    .back-btn {
       position: absolute;
       left: 15px;
       top: 15px;
+      background: none;
+      border: none;
       font-size: 18px;
       cursor: pointer;
     }
@@ -28,85 +30,104 @@
       font-size: 28px;
     }
 
-    .trainer {
-      background: white;
-      border-radius: 12px;
+    .list {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      max-width: 420px;
+      margin: 0 auto;
+    }
+
+    .card {
+      background: #fff;
       border: 2px solid #333;
+      border-radius: 12px;
       padding: 15px;
-      margin: 12px auto;
-      max-width: 380px;
       text-align: left;
     }
 
     .name {
-      font-size: 20px;
+      font-size: 18px;
       font-weight: bold;
-      margin-bottom: 5px;
+      margin-bottom: 6px;
+    }
+
+    .row {
+      font-size: 15px;
+      margin: 3px 0;
+    }
+
+    .actions {
+      margin-top: 10px;
+      display: flex;
+      gap: 15px;
     }
 
     .actions a {
-      display: inline-block;
-      margin-right: 10px;
       text-decoration: none;
       font-weight: bold;
-      color: #3b49df;
+      color: #1a73e8;
+      display: flex;
+      align-items: center;
+      gap: 5px;
     }
-
   </style>
 </head>
+
 <body>
 
-<div class="back" onclick="location.href='admin_menu.html'">⬅ В главное меню</div>
+<button class="back-btn" onclick="location.href='admin_menu.html'">⬅️ В главное меню</button>
 
 <h1>Тренеры</h1>
 
-<div id="list">Загрузка…</div>
+<div id="list" class="list"></div>
 
 <script>
 const API_URL = "https://script.google.com/macros/s/AKfycbydYQAoOMHlIAEZIsSUu3sNALYsltItXaBrc6qYHkUdmRvbfgIAutkhgV1Yowpw46WmFg/exec";
 
-document.addEventListener("DOMContentLoaded", () => {
-    loadTrainers();
-});
+fetch(API_URL + "?trainers=1")
+  .then(r => r.json())
+  .then(data => {
+    if (!data.ok) {
+      document.getElementById("list").innerHTML = "Ошибка загрузки данных.";
+      return;
+    }
 
-function loadTrainers() {
-    fetch(API_URL + "?trainersList=1")
-      .then(r => r.json())
-      .then(data => {
-        if (!data.ok || !data.trainers) {
-          document.getElementById("list").innerText = "Ошибка загрузки данных.";
-          return;
-        }
+    const list = document.getElementById("list");
 
-        renderTrainers(data.trainers);
-      })
-      .catch(err => {
-        console.error(err);
-        document.getElementById("list").innerText = "Ошибка связи с сервером.";
-      });
-}
+    data.trainers.forEach(t => {
+      const name     = t["ФИО"] || "—";
+      const city     = t["Город"] || "—";
+      const phone    = t["Phone"] || "";
+      const telegram = t["Контакт_Telegram"] || "";
 
-function renderTrainers(trainers) {
-    const box = document.getElementById("list");
-    box.innerHTML = "";
+      const phoneLink = phone
+        ? `<a href="tel:+7${phone.slice(-10)}">📞 Позвонить</a>`
+        : "";
 
-    trainers.forEach(t => {
-      const div = document.createElement("div");
-      div.className = "trainer";
+      const tgLink = telegram
+        ? `<a href="${telegram}" target="_blank">💬 Telegram</a>`
+        : "";
 
-      div.innerHTML = `
-        <div class="name">${t.name}</div>
-        <div>Город: ${t.city}</div>
-        <div>Телефон: <b>${t.phone}</b></div>
+      const card = document.createElement("div");
+      card.className = "card";
+      card.innerHTML = `
+        <div class="name">${name}</div>
+        <div class="row">Город: ${city}</div>
+        <div class="row">Телефон: ${phone || "—"}</div>
         <div class="actions">
-          <a href="tel:+7${t.phone}">📞 Позвонить</a>
-          <a href="${t.telegram}" target="_blank">💬 Telegram</a>
+          ${phoneLink}
+          ${tgLink}
         </div>
       `;
 
-      box.appendChild(div);
+      list.appendChild(card);
     });
-}
+  })
+  .catch(err => {
+    console.error(err);
+    document.getElementById("list").innerHTML = "Ошибка соединения с сервером.";
+  });
 </script>
 
 </body>
