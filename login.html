@@ -43,7 +43,7 @@
 
 <body>
 
-<h2>Вход для тренеров</h2>
+<h2>Вход</h2>
 
 <input id="phone" type="tel" placeholder="Введите номер телефона">
 
@@ -57,36 +57,40 @@ const API = "https://script.google.com/macros/s/AKfycbydYQAoOMHlIAEZIsSUu3sNALYs
 
 // --- Функция авторизации ---
 async function login() {
-    const phone = document.getElementById("phone").value.trim();
-    const errorBox = document.getElementById("error");
-    errorBox.innerText = ""; // очистить ошибку
+  const phone = document.getElementById("phone").value.trim();
+  const errorBox = document.getElementById("error");
+  errorBox.innerText = "";
 
-    if (!phone) {
-        errorBox.innerText = "Введите номер";
-        return;
+  if (!phone) {
+    errorBox.innerText = "Введите номер";
+    return;
+  }
+
+  try {
+    const res = await fetch(`${API}?login=1&phone=${encodeURIComponent(phone)}`);
+    const data = await res.json();
+
+    console.log("Ответ API:", data);
+
+    if (!data.ok || !data.found) {
+      errorBox.innerText = "Неверный номер";
+      return;
     }
 
-    try {
-        const res = await fetch(`${API}?login=1&phone=${encodeURIComponent(phone)}`);
-        const data = await res.json();
+    // сохраняем как раньше
+    localStorage.setItem("trainer", JSON.stringify(data));
 
-        console.log("Ответ API:", data);
-
-        if (!data.ok || !data.found) {
-            errorBox.innerText = "Неверный номер";
-            return;
-        }
-
-        // Сохраняем данные тренера
-        localStorage.setItem("trainer", JSON.stringify(data));
-
-        // Переход в меню
-        window.location.href = "index.html";
-
-    } catch (err) {
-        console.error(err);
-        errorBox.innerText = "Ошибка соединения";
+    // редирект по роли
+    if (data.role === "admin") {
+      window.location.href = "admin_menu.html";
+    } else {
+      window.location.href = "index.html";
     }
+
+  } catch (err) {
+    console.error(err);
+    errorBox.innerText = "Ошибка соединения";
+  }
 }
 
 // --- Привязываем кнопку ---
