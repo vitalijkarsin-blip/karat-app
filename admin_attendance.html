@@ -23,12 +23,49 @@
 <h1>Посещаемость</h1>
 
 <div class="menu">
-  <a class="btn" href="admin_table_wrapper.html?id=karatAttend">Карат</a>
-  <a class="btn" href="admin_table_wrapper.html?id=krasnAttend">Краснотурьинск</a>
-  <a class="btn" href="admin_table_wrapper.html?id=maugliAttend">Маугли</a>
+  <button class="btn" onclick="openForm('karatAttend')">Карат</button>
+  <button class="btn" onclick="openForm('krasnAttend')">Краснотурьинск</button>
+  <button class="btn" onclick="openForm('maugliAttend')">Маугли</button>
 </div>
 
-<script src="admin.js"></script>
+<script>
+  const API_URL = "https://script.google.com/macros/s/AKfycbydYQAoOMHlIAEZIsSUu3sNALYsltItXaBrc6qYHkUdmRvbfgIAutkhgV1Yowpw46WmFg/exec";
+
+  let ADMIN_TABLES = null;
+  let TABLES_PROMISE = null;
+
+  function loadAdminTables() {
+    if (ADMIN_TABLES) return Promise.resolve(ADMIN_TABLES);
+    if (TABLES_PROMISE) return TABLES_PROMISE;
+
+    TABLES_PROMISE = fetch(API_URL + "?admintables=1")
+      .then(r => r.json())
+      .then(data => {
+        ADMIN_TABLES = data.tables || [];
+        return ADMIN_TABLES;
+      });
+
+    return TABLES_PROMISE;
+  }
+
+  function openForm(id) {
+    loadAdminTables()
+      .then(tables => {
+        const row = tables.find(r => r.id === id);
+        if (!row || !row.url) {
+          alert("Ошибка: ссылка не найдена.");
+          return;
+        }
+
+        const target = "admin_form_wrapper.html?url=" + encodeURIComponent(row.url);
+        window.location.href = target;
+      })
+      .catch(err => {
+        console.error(err);
+        alert("Ошибка загрузки ссылок.");
+      });
+  }
+</script>
 
 </body>
 </html>
