@@ -70,25 +70,45 @@
   <button class="btn" onclick="openForm('maugliFees')">Маугли — взносы</button>
 </div>
 
-
 <script>
-/**  
- * Открывает Google-форму в контейнере admin_form_wrapper.html  
- */
-function openForm(id) {
-    const adminTables = JSON.parse(localStorage.getItem("AdminTables") || "[]");
-    const row = adminTables.find(r => r.id === id);
+  // URL твоего Apps Script (тот же, что и у ведомостей)
+  const API_URL = "https://script.google.com/macros/s/AKfycbydYQAoOMHlIAEZIsSUu3sNALYsltItXaBrc6qYHkUdmRvbfgIAutkhgV1Yowpw46WmFg/exec";
 
-    if (!row) {
-        alert("Ошибка: ссылка не найдена.");
-        return;
-    }
+  let ADMIN_TABLES = null;
+  let TABLES_PROMISE = null;
 
-    // универсальный вызов контейнера
-    const target = "admin_form_wrapper.html?url=" + encodeURIComponent(row.url);
+  // Загружаем AdminTables ОДИН раз и кешируем
+  function loadAdminTables() {
+    if (ADMIN_TABLES) return Promise.resolve(ADMIN_TABLES);
+    if (TABLES_PROMISE) return TABLES_PROMISE;
 
-    window.location.href = target;
-}
+    TABLES_PROMISE = fetch(API_URL + "?admintables=1")
+      .then(r => r.json())
+      .then(data => {
+        ADMIN_TABLES = data.tables || [];
+        return ADMIN_TABLES;
+      });
+
+    return TABLES_PROMISE;
+  }
+
+  function openForm(id) {
+    loadAdminTables()
+      .then(tables => {
+        const row = tables.find(r => r.id === id);
+        if (!row || !row.url) {
+          alert("Ошибка: ссылка для этого раздела не найдена.");
+          return;
+        }
+
+        const target = "admin_form_wrapper.html?url=" + encodeURIComponent(row.url);
+        window.location.href = target;
+      })
+      .catch(err => {
+        console.error(err);
+        alert("Ошибка загрузки ссылок. Попробуйте позже.");
+      });
+  }
 </script>
 
 </body>
