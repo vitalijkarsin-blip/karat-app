@@ -2,17 +2,100 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <title>AI_Methodist</title>
+  <title>AI Methodist</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <div class="page">
+    <header class="hero">
+      <p class="eyebrow">AI Methodist</p>
+      <h1>Анкета тренировки</h1>
+      <p class="lead">Уточните детали, чтобы мы подготовили точный план работы.</p>
+    </header>
 
-  <div id="app">
-    <h1>AI Методист</h1>
+    <main class="card">
+      <form id="requestForm" class="form">
+        <div class="field">
+          <label for="age-from">Возраст (диапазон)</label>
+          <div class="range-row">
+            <input type="number" id="age-from" name="age_from" placeholder="14" min="1" required>
+            <span class="dash">—</span>
+            <input type="number" id="age-to" name="age_to" placeholder="16" min="1" required>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="kyu-from">Кю (диапазон)</label>
+          <div class="range-row">
+            <input type="text" id="kyu-from" name="kyu_from" placeholder="6 кю" required>
+            <span class="dash">—</span>
+            <input type="text" id="kyu-to" name="kyu_to" placeholder="4 кю" required>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="goal">Цель тренировки</label>
+          <select id="goal" name="goal">
+            <option value="training">Подготовка к тренировочному сбору</option>
+            <option value="tournament">Подготовка к турниру</option>
+            <option value="exam">Подготовка к сдаче экзамена</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <span class="label">Формат</span>
+          <div class="radio-row">
+            <label class="chip">
+              <input type="radio" name="format" value="single" checked>
+              <span>Разовая</span>
+            </label>
+            <label class="chip">
+              <input type="radio" name="format" value="cycle_2w">
+              <span>Цикл на 2 недели</span>
+            </label>
+            <label class="chip">
+              <input type="radio" name="format" value="cycle_1m">
+              <span>Цикл на месяц</span>
+            </label>
+          </div>
+        </div>
+
+        <fieldset class="field">
+          <legend>Приоритеты (можно несколько)</legend>
+          <div class="checkbox-grid">
+            <label class="checkbox">
+              <input type="checkbox" name="focus" value="physics">
+              <span>Физика</span>
+            </label>
+            <label class="checkbox">
+              <input type="checkbox" name="focus" value="technique">
+              <span>Техника</span>
+            </label>
+            <label class="checkbox">
+              <input type="checkbox" name="focus" value="kata">
+              <span>Ката</span>
+            </label>
+            <label class="checkbox">
+              <input type="checkbox" name="focus" value="sparring">
+              <span>Спарринг</span>
+            </label>
+          </div>
+        </fieldset>
+
+        <div class="actions">
+          <button type="submit">Сформировать запрос</button>
+          <p class="hint">Мы не отправляем данные — форма для примера UI.</p>
+        </div>
+      </form>
+
+      <pre id="output" aria-live="polite"></pre>
+    </main>
   </div>
 
   <script src="app.js"></script>
-
 </body>
 </html>
