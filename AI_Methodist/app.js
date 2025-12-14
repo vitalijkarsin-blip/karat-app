@@ -11,83 +11,28 @@ const detailsWrap = document.getElementById('trainingDetails');
 const detailsContent = document.getElementById('detailsContent');
 const output = document.getElementById('output');
 
+// ===== ВСТАВЬ СЮДА URL ШАБЛОННОГО GAS =====
+const TEMPLATES_API_URL = 'https://script.google.com/macros/s/AKfycbxWYN4u_a0IzV76m3V4tjB7ufzO7UTQjmVFBezY3skT867gj2UQ90K7T_nQtdc5EeHO/exec';
+
 // ===== STATE =====
 let currentCycle = null;
 let cycleAccepted = false;
+let lastPayload = null;
+let lastTraining = null;
 
-// ===== ШАБЛОНЫ ПОДРОБНЫХ ТРЕНИРОВОК =====
+// ===== LOCAL FALLBACK TEMPLATES =====
 const DETAILS_TEMPLATES = {
-  adaptation: `
-Разминка:
-– суставная гимнастика
-– лёгкий бег 5 минут
-
-Кихон на месте:
-– цуки (сэйкен, моротэ)
-– акцент на стойку и баланс
-
-ОФП:
-– отжимания 5×10
-– пресс 3×20
-
-Заминка:
-– растяжка ног и спины
-  `,
-
-  load: `
-Разминка:
-– бег + ускорения
-– суставная подготовка
-
-Техника:
-– комбинации в движении
-– работа в парах
-
-ОФП:
-– силовой круг
-– работа на выносливость
-
-Заминка:
-– дыхание и растяжка
-  `,
-
-  specialization: `
-Разминка:
-– динамика + реакция
-
-Техника:
-– удары под цель
-– связки под задачу
-
-Спарринги:
-– ограниченные задания
-– контроль дистанции
-
-Заминка:
-– восстановление
-  `,
-
-  control: `
-Разминка:
-– стандартная
-
-Контроль:
-– кихон
-– физические тесты
-– спарринги
-
-Анализ:
-– ошибки
-– рекомендации
-  `
+  adaptation: `Разминка:\n– суставная гимнастика\n– лёгкий бег 5 минут\n\nТехника:\n– кихон на месте\n– стойки, баланс\n\nОФП:\n– отжимания 5×10\n– пресс 3×20\n\nЗаминка:\n– растяжка`,
+  load: `Разминка:\n– бег + ускорения\n\nТехника:\n– комбинации в движении\n– работа в парах\n\nОФП:\n– силовой круг\n\nЗаминка:\n– дыхание и растяжка`,
+  specialization: `Разминка:\n– динамика + реакция\n\nТехника:\n– удары под цель\n\nСпарринги:\n– задания\n\nЗаминка:\n– восстановление`,
+  control: `Разминка:\n– стандартная\n\nКонтроль:\n– кихон\n– тесты\n– спарринги\n\nАнализ:\n– ошибки и рекомендации`
 };
 
-// ===== HELPERS =====
 function getStageKey(stage) {
   return ['adaptation', 'load', 'specialization', 'control'][stage % 4];
 }
 
-// ===== FORM SUBMIT =====
+// ===== SUBMIT =====
 form.addEventListener('submit', (e) => {
   e.preventDefault();
 
@@ -98,7 +43,7 @@ form.addEventListener('submit', (e) => {
   const kyuFrom = fd.get('kyu_from');
   const kyuTo = fd.get('kyu_to') || kyuFrom;
 
-  const payload = {
+  lastPayload = {
     age: { from: ageFrom, to: ageTo },
     kyu: { from: kyuFrom, to: kyuTo },
     goal: fd.get('goal'),
@@ -106,20 +51,21 @@ form.addEventListener('submit', (e) => {
     focus: fd.getAll('focus')
   };
 
-  output.textContent = JSON.stringify(payload, null, 2);
+  output.textContent = JSON.stringify(lastPayload, null, 2);
   detailsWrap.hidden = true;
 
-  if (payload.format === 'single') {
+  if (lastPayload.format === 'single') {
     currentCycle = null;
     cycleAccepted = false;
     acceptBtn.hidden = true;
 
-    renderTraining(getTrainingByStage(0));
+    lastTraining = makeTraining(0);
+    renderTraining(lastTraining);
     return;
   }
 
   currentCycle = {
-    weeks: payload.format === 'cycle_2w' ? 2 : 4,
+    weeks: lastPayload.format === 'cycle_2w' ? 2 : 4,
     stage: 0
   };
 
@@ -158,25 +104,22 @@ acceptBtn.addEventListener('click', () => {
     return;
   }
 
-  renderTraining(getTrainingByStage(currentCycle.stage));
+  lastTraining = makeTraining(currentCycle.stage);
+  renderTraining(lastTraining);
   currentCycle.stage++;
 });
 
-// ===== TRAINING =====
-function getTrainingByStage(stage) {
+// ===== TRAINING MAKER =====
+function makeTraining(stage) {
   return {
     title: `Тренировка — ${['Адаптация','Нагрузка','Специализация','Контроль'][stage % 4]}`,
     duration: stage === 0 ? '75 минут' : '90 минут',
-    blocks: [
-      'Разминка',
-      'Техника',
-      'ОФП / Спарринги',
-      'Заминка'
-    ],
+    blocks: ['Разминка', 'Техника', 'ОФП / Спарринги', 'Заминка'],
     stage
   };
 }
 
+// ===== RENDER TRAINING =====
 function renderTraining(data) {
   title.textContent = data.title;
   duration.textContent = data.duration;
@@ -188,10 +131,9 @@ function renderTraining(data) {
     blocks.appendChild(li);
   });
 
-  const stageKey = getStageKey(data.stage);
-  detailsContent.textContent = DETAILS_TEMPLATES[stageKey];
-
+  // 🔴 ВАЖНО: сбрасываем подробный план
   detailsWrap.hidden = true;
+  detailsContent.textContent = '';
   detailsBtn.hidden = false;
   detailsBtn.textContent = '📋 Подробная тренировка';
 
@@ -201,19 +143,60 @@ function renderTraining(data) {
   result.hidden = false;
 }
 
-// ===== DETAILS TOGGLE =====
-detailsBtn.addEventListener('click', () => {
+// ===== DETAILS (fetch from Sheets via GAS) =====
+detailsBtn.addEventListener('click', async () => {
   const isHidden = detailsWrap.hidden;
-  detailsWrap.hidden = !isHidden;
-  detailsBtn.textContent = isHidden
-    ? '⬆️ Скрыть подробный план'
-    : '📋 Подробная тренировка';
+
+  // toggle close
+  if (!isHidden) {
+    detailsWrap.hidden = true;
+    detailsBtn.textContent = '📋 Подробная тренировка';
+    return;
+  }
+
+  // open + load
+  detailsWrap.hidden = false;
+  detailsBtn.textContent = '⬆️ Скрыть подробный план';
+
+  const stageKey = getStageKey(lastTraining?.stage ?? 0);
+  const goal = (lastPayload?.goal || 'training');
+  const focus = lastPayload?.focus || [];
+
+  const type = (goal === 'tournament' || focus.includes('sparring')) ? 'combat' : 'technical';
+
+  // если API не вставлен — показываем локальный
+  if (!TEMPLATES_API_URL || TEMPLATES_API_URL.startsWith('ВСТАВЬ')) {
+    detailsContent.textContent = DETAILS_TEMPLATES[stageKey] || 'Нет шаблона';
+    return;
+  }
+
+  detailsContent.textContent = 'Загружаю шаблон из базы...';
+
+  try {
+    const url = `${TEMPLATES_API_URL}?action=template&goal=${encodeURIComponent(goal)}&stage=${encodeURIComponent(stageKey)}&type=${encodeURIComponent(type)}`;
+    const res = await fetch(url);
+    const data = await res.json();
+
+    output.textContent += '\n\n--- TEMPLATE RESPONSE ---\n';
+    output.textContent += JSON.stringify(data, null, 2);
+
+    if (data.status === 'ok' && data.template && data.template.full_plan) {
+      detailsContent.textContent = data.template.full_plan;
+    } else {
+      detailsContent.textContent = DETAILS_TEMPLATES[stageKey] || 'Нет шаблона';
+    }
+  } catch (e) {
+    detailsContent.textContent = DETAILS_TEMPLATES[stageKey] || 'Нет шаблона';
+  }
 });
 
 // ===== RESET =====
 resetBtn.addEventListener('click', () => {
   currentCycle = null;
   cycleAccepted = false;
+  lastPayload = null;
+  lastTraining = null;
+
   result.hidden = true;
   form.hidden = false;
   detailsWrap.hidden = true;
