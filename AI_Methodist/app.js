@@ -1,3 +1,4 @@
+// ===== DOM =====
 const form = document.getElementById('requestForm');
 const result = document.getElementById('result');
 const title = document.getElementById('trainingTitle');
@@ -10,10 +11,83 @@ const detailsWrap = document.getElementById('trainingDetails');
 const detailsContent = document.getElementById('detailsContent');
 const output = document.getElementById('output');
 
+// ===== STATE =====
 let currentCycle = null;
 let cycleAccepted = false;
 
-/* ===== FORM SUBMIT ===== */
+// ===== ШАБЛОНЫ ПОДРОБНЫХ ТРЕНИРОВОК =====
+const DETAILS_TEMPLATES = {
+  adaptation: `
+Разминка:
+– суставная гимнастика
+– лёгкий бег 5 минут
+
+Кихон на месте:
+– цуки (сэйкен, моротэ)
+– акцент на стойку и баланс
+
+ОФП:
+– отжимания 5×10
+– пресс 3×20
+
+Заминка:
+– растяжка ног и спины
+  `,
+
+  load: `
+Разминка:
+– бег + ускорения
+– суставная подготовка
+
+Техника:
+– комбинации в движении
+– работа в парах
+
+ОФП:
+– силовой круг
+– работа на выносливость
+
+Заминка:
+– дыхание и растяжка
+  `,
+
+  specialization: `
+Разминка:
+– динамика + реакция
+
+Техника:
+– удары под цель
+– связки под задачу
+
+Спарринги:
+– ограниченные задания
+– контроль дистанции
+
+Заминка:
+– восстановление
+  `,
+
+  control: `
+Разминка:
+– стандартная
+
+Контроль:
+– кихон
+– физические тесты
+– спарринги
+
+Анализ:
+– ошибки
+– рекомендации
+  `
+};
+
+// ===== HELPERS =====
+function getStageKey(stage) {
+  return ['adaptation', 'load', 'specialization', 'control'][stage % 4];
+}
+
+// ===== FORM SUBMIT =====
 form.addEventListener('submit', (e) => {
   e.preventDefault();
 
@@ -33,7 +107,6 @@ form.addEventListener('submit', (e) => {
   };
 
   output.textContent = JSON.stringify(payload, null, 2);
-
   detailsWrap.hidden = true;
 
   if (payload.format === 'single') {
@@ -54,7 +127,7 @@ form.addEventListener('submit', (e) => {
   renderCycleStructure();
 });
 
-/* ===== CYCLE STRUCTURE ===== */
+// ===== CYCLE STRUCTURE =====
 function renderCycleStructure() {
   title.textContent = `Цикл на ${currentCycle.weeks} недели`;
   duration.textContent = 'Структура цикла';
@@ -74,7 +147,7 @@ function renderCycleStructure() {
   result.hidden = false;
 }
 
-/* ===== ACCEPT / NEXT ===== */
+// ===== ACCEPT / NEXT =====
 acceptBtn.addEventListener('click', () => {
   if (!currentCycle) return;
 
@@ -89,33 +162,18 @@ acceptBtn.addEventListener('click', () => {
   currentCycle.stage++;
 });
 
-/* ===== TRAINING ===== */
+// ===== TRAINING =====
 function getTrainingByStage(stage) {
   return {
-    title: 'Тренировка — Адаптация',
-    duration: '75 минут',
+    title: `Тренировка — ${['Адаптация','Нагрузка','Специализация','Контроль'][stage % 4]}`,
+    duration: stage === 0 ? '75 минут' : '90 минут',
     blocks: [
-      'Лёгкая разминка',
-      'Базовая техника',
-      'ОФП',
-      'Растяжка'
+      'Разминка',
+      'Техника',
+      'ОФП / Спарринги',
+      'Заминка'
     ],
-    details: `
-Разминка:
-– суставная гимнастика
-– лёгкий бег, 5 мин
-
-Техника:
-– кихон на месте
-– работа рук и корпуса
-
-ОФП:
-– отжимания 5×10
-– пресс 3×20
-
-Заминка:
-– растяжка ног и спины
-`
+    stage
   };
 }
 
@@ -130,7 +188,9 @@ function renderTraining(data) {
     blocks.appendChild(li);
   });
 
-  detailsContent.textContent = data.details || 'Подробный план пока недоступен';
+  const stageKey = getStageKey(data.stage);
+  detailsContent.textContent = DETAILS_TEMPLATES[stageKey];
+
   detailsWrap.hidden = true;
   detailsBtn.hidden = false;
   detailsBtn.textContent = '📋 Подробная тренировка';
@@ -141,7 +201,7 @@ function renderTraining(data) {
   result.hidden = false;
 }
 
-/* ===== DETAILS TOGGLE ===== */
+// ===== DETAILS TOGGLE =====
 detailsBtn.addEventListener('click', () => {
   const isHidden = detailsWrap.hidden;
   detailsWrap.hidden = !isHidden;
@@ -150,11 +210,10 @@ detailsBtn.addEventListener('click', () => {
     : '📋 Подробная тренировка';
 });
 
-/* ===== RESET ===== */
+// ===== RESET =====
 resetBtn.addEventListener('click', () => {
   currentCycle = null;
   cycleAccepted = false;
-
   result.hidden = true;
   form.hidden = false;
   detailsWrap.hidden = true;
