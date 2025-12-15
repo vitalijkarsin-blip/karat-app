@@ -1,204 +1,130 @@
-// ===== DOM =====
-const form = document.getElementById('requestForm');
+﻿const form = document.getElementById('requestForm');
 const result = document.getElementById('result');
-const title = document.getElementById('trainingTitle');
-const duration = document.getElementById('trainingDuration');
-const blocks = document.getElementById('trainingBlocks');
-const resetBtn = document.getElementById('resetBtn');
-const acceptBtn = document.getElementById('acceptBtn');
+
+const titleEl = document.getElementById('trainingTitle');
+const durationEl = document.getElementById('trainingDuration');
+const blocksEl = document.getElementById('trainingBlocks');
+
 const detailsBtn = document.getElementById('detailsBtn');
-const detailsWrap = document.getElementById('trainingDetails');
+const trainingDetails = document.getElementById('trainingDetails');
 const detailsContent = document.getElementById('detailsContent');
+
+const resetBtn = document.getElementById('resetBtn');
 const output = document.getElementById('output');
 
-// ===== ВСТАВЬ СЮДА URL ШАБЛОННОГО GAS =====
-const TEMPLATES_API_URL = 'https://script.google.com/macros/s/AKfycbxWYN4u_a0IzV76m3V4tjB7ufzO7UTQjmVFBezY3skT867gj2UQ90K7T_nQtdc5EeHO/exec';
+/* === GAS API === */
+const API_URL =
+  'https://script.google.com/macros/s/AKfycbzcq37NZTXwh1CVcZGXtRgN59DVJtnRpO8-JICrXWuPnf6hU0vG0ZZ_uAuclb50p8su/exec';
 
-// ===== STATE =====
-let currentCycle = null;
-let cycleAccepted = false;
-let lastPayload = null;
-let lastTraining = null;
+/* ===== helpers ===== */
 
-// ===== LOCAL FALLBACK TEMPLATES =====
-const DETAILS_TEMPLATES = {
-  adaptation: `Разминка:\n– суставная гимнастика\n– лёгкий бег 5 минут\n\nТехника:\n– кихон на месте\n– стойки, баланс\n\nОФП:\n– отжимания 5×10\n– пресс 3×20\n\nЗаминка:\n– растяжка`,
-  load: `Разминка:\n– бег + ускорения\n\nТехника:\n– комбинации в движении\n– работа в парах\n\nОФП:\n– силовой круг\n\nЗаминка:\n– дыхание и растяжка`,
-  specialization: `Разминка:\n– динамика + реакция\n\nТехника:\n– удары под цель\n\nСпарринги:\n– задания\n\nЗаминка:\n– восстановление`,
-  control: `Разминка:\n– стандартная\n\nКонтроль:\n– кихон\n– тесты\n– спарринги\n\nАнализ:\n– ошибки и рекомендации`
-};
-
-function getStageKey(stage) {
-  return ['adaptation', 'load', 'specialization', 'control'][stage % 4];
+function parseKyu(value) {
+  if (!value) return null;
+  const n = parseInt(String(value).replace(/\D/g, ''), 10);
+  return Number.isFinite(n) ? n : null;
 }
 
-// ===== SUBMIT =====
-form.addEventListener('submit', (e) => {
-  e.preventDefault();
-
+function buildPayload() {
   const fd = new FormData(form);
 
-  const ageFrom = fd.get('age_from');
-  const ageTo = fd.get('age_to') || ageFrom;
-  const kyuFrom = fd.get('kyu_from');
-  const kyuTo = fd.get('kyu_to') || kyuFrom;
-
-  lastPayload = {
-    age: { from: ageFrom, to: ageTo },
-    kyu: { from: kyuFrom, to: kyuTo },
-    goal: fd.get('goal'),
-    format: fd.get('format'),
-    focus: fd.getAll('focus')
-  };
-
-  output.textContent = JSON.stringify(lastPayload, null, 2);
-  detailsWrap.hidden = true;
-
-  if (lastPayload.format === 'single') {
-    currentCycle = null;
-    cycleAccepted = false;
-    acceptBtn.hidden = true;
-
-    lastTraining = makeTraining(0);
-    renderTraining(lastTraining);
-    return;
-  }
-
-  currentCycle = {
-    weeks: lastPayload.format === 'cycle_2w' ? 2 : 4,
-    stage: 0
-  };
-
-  cycleAccepted = false;
-  renderCycleStructure();
-});
-
-// ===== CYCLE STRUCTURE =====
-function renderCycleStructure() {
-  title.textContent = `Цикл на ${currentCycle.weeks} недели`;
-  duration.textContent = 'Структура цикла';
-  blocks.innerHTML = '';
-
-  ['Адаптация', 'Нагрузка', 'Специализация', 'Контроль'].forEach((s, i) => {
-    const li = document.createElement('li');
-    li.textContent = `${i + 1}. ${s}`;
-    blocks.appendChild(li);
-  });
-
-  acceptBtn.textContent = '✅ Принять цикл';
-  acceptBtn.hidden = false;
-  detailsBtn.hidden = true;
-
-  form.hidden = true;
-  result.hidden = false;
-}
-
-// ===== ACCEPT / NEXT =====
-acceptBtn.addEventListener('click', () => {
-  if (!currentCycle) return;
-
-  if (!cycleAccepted) {
-    cycleAccepted = true;
-    acceptBtn.textContent = '➡️ Следующая тренировка';
-    output.textContent += '\n\n[Цикл принят]';
-    return;
-  }
-
-  lastTraining = makeTraining(currentCycle.stage);
-  renderTraining(lastTraining);
-  currentCycle.stage++;
-});
-
-// ===== TRAINING MAKER =====
-function makeTraining(stage) {
   return {
-    title: `Тренировка — ${['Адаптация','Нагрузка','Специализация','Контроль'][stage % 4]}`,
-    duration: stage === 0 ? '75 минут' : '90 минут',
-    blocks: ['Разминка', 'Техника', 'ОФП / Спарринги', 'Заминка'],
-    stage
+    kyu: parseKyu(fd.get('kyu_from')),
+    goal: fd.get('goal') === 'training' ? 'normal' : fd.get('goal')
   };
 }
 
-// ===== RENDER TRAINING =====
-function renderTraining(data) {
-  title.textContent = data.title;
-  duration.textContent = data.duration;
-  blocks.innerHTML = '';
-
-  data.blocks.forEach(b => {
-    const li = document.createElement('li');
-    li.textContent = b;
-    blocks.appendChild(li);
+async function callAPI(payload) {
+  const params = new URLSearchParams();
+  Object.entries(payload).forEach(([k, v]) => {
+    if (v === null || v === undefined) return;
+    params.set(k, v);
   });
 
-  // 🔴 ВАЖНО: сбрасываем подробный план
-  detailsWrap.hidden = true;
-  detailsContent.textContent = '';
-  detailsBtn.hidden = false;
-  detailsBtn.textContent = '📋 Подробная тренировка';
-
-  acceptBtn.hidden = !currentCycle;
-
-  form.hidden = true;
-  result.hidden = false;
+  const res = await fetch(`${API_URL}?${params.toString()}`);
+  return await res.json();
 }
 
-// ===== DETAILS (fetch from Sheets via GAS) =====
-detailsBtn.addEventListener('click', async () => {
-  const isHidden = detailsWrap.hidden;
+/* ===== submit ===== */
 
-  // toggle close
-  if (!isHidden) {
-    detailsWrap.hidden = true;
-    detailsBtn.textContent = '📋 Подробная тренировка';
-    return;
-  }
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
 
-  // open + load
-  detailsWrap.hidden = false;
-  detailsBtn.textContent = '⬆️ Скрыть подробный план';
-
-  const stageKey = getStageKey(lastTraining?.stage ?? 0);
-  const goal = (lastPayload?.goal || 'training');
-  const focus = lastPayload?.focus || [];
-
-  const type = (goal === 'tournament' || focus.includes('sparring')) ? 'combat' : 'technical';
-
-  // если API не вставлен — показываем локальный
-  if (!TEMPLATES_API_URL || TEMPLATES_API_URL.startsWith('ВСТАВЬ')) {
-    detailsContent.textContent = DETAILS_TEMPLATES[stageKey] || 'Нет шаблона';
-    return;
-  }
-
-  detailsContent.textContent = 'Загружаю шаблон из базы...';
+  const payload = buildPayload();
+  output.textContent = JSON.stringify(payload, null, 2);
 
   try {
-    const url = `${TEMPLATES_API_URL}?action=template&goal=${encodeURIComponent(goal)}&stage=${encodeURIComponent(stageKey)}&type=${encodeURIComponent(type)}`;
-    const res = await fetch(url);
-    const data = await res.json();
+    const data = await callAPI(payload);
 
-    output.textContent += '\n\n--- TEMPLATE RESPONSE ---\n';
+    output.textContent += '\n\n--- SERVER ---\n';
     output.textContent += JSON.stringify(data, null, 2);
 
-    if (data.status === 'ok' && data.template && data.template.full_plan) {
-      detailsContent.textContent = data.template.full_plan;
+    if (data.status === 'ok') {
+      renderTraining(data.training);
     } else {
-      detailsContent.textContent = DETAILS_TEMPLATES[stageKey] || 'Нет шаблона';
+      output.textContent += `\n\n[Ошибка]: ${data.message}`;
     }
-  } catch (e) {
-    detailsContent.textContent = DETAILS_TEMPLATES[stageKey] || 'Нет шаблона';
+  } catch (err) {
+    output.textContent += `\n\n[Ошибка соединения]: ${err.message}`;
   }
 });
 
-// ===== RESET =====
-resetBtn.addEventListener('click', () => {
-  currentCycle = null;
-  cycleAccepted = false;
-  lastPayload = null;
-  lastTraining = null;
+/* ===== render ===== */
 
+function renderTraining(training) {
+  titleEl.textContent = training.title || 'Тренировка';
+
+  // short_blocks → список
+  blocksEl.innerHTML = '';
+  if (training.short_blocks) {
+    const parts = String(training.short_blocks)
+      .split('→')
+      .map(p => p.trim())
+      .filter(Boolean);
+
+    parts.forEach(p => {
+      const li = document.createElement('li');
+      li.textContent = p;
+      li.style.fontWeight = '600';
+      blocksEl.appendChild(li);
+    });
+  }
+
+  // полный план
+  if (training.full_plan) {
+    detailsContent.textContent = training.full_plan;
+    detailsBtn.hidden = false;
+    trainingDetails.hidden = true;
+    detailsBtn.textContent = 'Показать полный план';
+  } else {
+    detailsBtn.hidden = true;
+    trainingDetails.hidden = true;
+    detailsContent.textContent = '';
+  }
+
+  form.hidden = true;
+  result.hidden = false;
+}
+
+/* ===== details toggle ===== */
+
+detailsBtn.addEventListener('click', () => {
+  const show = trainingDetails.hidden;
+  trainingDetails.hidden = !show;
+  detailsBtn.textContent = show
+    ? 'Скрыть полный план'
+    : 'Показать полный план';
+});
+
+/* ===== reset ===== */
+
+resetBtn.addEventListener('click', () => {
   result.hidden = true;
   form.hidden = false;
-  detailsWrap.hidden = true;
+
+  blocksEl.innerHTML = '';
+  detailsContent.textContent = '';
+  trainingDetails.hidden = true;
+  detailsBtn.hidden = true;
+
   output.textContent = '';
 });
