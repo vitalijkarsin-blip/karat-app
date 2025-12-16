@@ -54,7 +54,7 @@ function buildPayload() {
 
   const focus = fd.getAll('focus').join(',');
 
-  return {
+  const payload = {
     mode,
     age_from: ageFrom,
     age_to: ageTo,
@@ -63,7 +63,16 @@ function buildPayload() {
     goal: fd.get('goal') === 'training' ? 'normal' : fd.get('goal'),
     focus
   };
+
+  // ⚠️ weeks и trainings_per_week ТОЛЬКО для cycle
+  if (mode === 'cycle') {
+    payload.weeks = numOrNull(fd.get('weeks'));
+    payload.trainings_per_week = numOrNull(fd.get('trainings_per_week'));
+  }
+
+  return payload;
 }
+
 
 /* ===== API ===== */
 
