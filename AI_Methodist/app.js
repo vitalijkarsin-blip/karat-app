@@ -64,7 +64,6 @@ function buildPayload() {
     focus
   };
 
-  // ⚠️ weeks и trainings_per_week ТОЛЬКО для cycle
   if (mode === 'cycle') {
     payload.weeks = numOrNull(fd.get('weeks'));
     payload.trainings_per_week = numOrNull(fd.get('trainings_per_week'));
@@ -72,7 +71,6 @@ function buildPayload() {
 
   return payload;
 }
-
 
 /* ===== API ===== */
 
@@ -107,20 +105,31 @@ form.addEventListener('submit', async (e) => {
       return;
     }
 
-    renderTraining(data.training);
-
-    // UI state
-    if (data.session_id) {
+    // === СТАРТ ЦИКЛА ===
+    if (payload.mode === 'cycle') {
       currentSessionId = data.session_id;
+
+      form.hidden = true;
+      result.hidden = false;
+
+      titleEl.textContent = 'Цикл тренировок запущен';
+      blocksEl.innerHTML = '';
+      detailsContent.textContent = '';
+
       acceptBtn.hidden = true;
-      acceptCycleBtn.hidden = false;
-      nextBtn.hidden = true;
-    } else {
-      currentSessionId = null;
-      acceptBtn.hidden = false;
       acceptCycleBtn.hidden = true;
-      nextBtn.hidden = true;
+      nextBtn.hidden = false;
+
+      return;
     }
+
+    // === РАЗОВАЯ ТРЕНИРОВКА ===
+    renderTraining(data.training);
+    currentSessionId = null;
+
+    acceptBtn.hidden = false;
+    acceptCycleBtn.hidden = true;
+    nextBtn.hidden = true;
 
   } catch (err) {
     output.textContent += `\n\n[Ошибка соединения]: ${err.message}`;
@@ -164,13 +173,7 @@ function renderTraining(training) {
 /* ===== buttons ===== */
 
 acceptBtn.addEventListener('click', () => {
-  // для разовой — просто фиксируем
   acceptBtn.hidden = true;
-});
-
-acceptCycleBtn.addEventListener('click', () => {
-  acceptCycleBtn.hidden = true;
-  nextBtn.hidden = false;
 });
 
 nextBtn.addEventListener('click', async () => {
@@ -186,6 +189,12 @@ nextBtn.addEventListener('click', async () => {
       renderTraining(data.training);
       nextBtn.hidden = false;
     }
+
+    if (data.status === 'done') {
+      nextBtn.hidden = true;
+      titleEl.textContent = 'Цикл завершён';
+    }
+
   } catch (e) {
     alert('Ошибка получения следующей тренировки');
   }
