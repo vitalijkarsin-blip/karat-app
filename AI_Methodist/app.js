@@ -107,8 +107,8 @@ function renderTraining(training) {
   blocksEl.innerHTML = '';
 
   if (training.short_blocks) {
-    training.short_blocks
-      .split('→')
+    String(training.short_blocks)
+      .split('\u2192')
       .map(p => p.trim())
       .filter(Boolean)
       .forEach(p => {
@@ -118,9 +118,13 @@ function renderTraining(training) {
       });
   }
 
-  detailsContent.textContent = training.full_plan || '';
-  detailsBtn.hidden = !training.full_plan;
+  const hasDetails = Boolean(training.full_plan);
+  detailsContent.textContent = hasDetails ? training.full_plan : '';
+  detailsBtn.hidden = !hasDetails;
   trainingDetails.hidden = true;
+  if (hasDetails) {
+    detailsBtn.textContent = '\u041f\u043e\u043a\u0430\u0437\u0430\u0442\u044c \u043f\u043e\u043b\u043d\u044b\u0439 \u043f\u043b\u0430\u043d';
+  }
 
   form.hidden = true;
   result.hidden = false;
@@ -186,7 +190,7 @@ nextBtn.addEventListener('click', async () => {
     setLoading(false);
 
     if (data.status === 'ok' && data.training) {
-      cycleIndex++;              // ← СЧИТАЕМ ТОЛЬКО ТУТ
+      cycleIndex++;              // СЧИТАЕМ ТОЛЬКО ТУТ
       renderTraining(data.training);
       setCycleTitle();
       return;
@@ -200,6 +204,16 @@ nextBtn.addEventListener('click', async () => {
   } catch {
     setLoading(false);
   }
+});
+
+/* ===== details toggle ===== */
+
+detailsBtn.addEventListener('click', () => {
+  const isHidden = trainingDetails.hidden;
+  trainingDetails.hidden = !isHidden;
+  detailsBtn.textContent = isHidden
+    ? '\u0421\u043a\u0440\u044b\u0442\u044c \u043f\u043e\u043b\u043d\u044b\u0439 \u043f\u043b\u0430\u043d'
+    : '\u041f\u043e\u043a\u0430\u0437\u0430\u0442\u044c \u043f\u043e\u043b\u043d\u044b\u0439 \u043f\u043b\u0430\u043d';
 });
 
 /* ===== reset ===== */
