@@ -21,15 +21,9 @@ const btnText = submitBtn.querySelector('.btn-text');
 const btnLoader = submitBtn.querySelector('.btn-loader');
 
 function setLoading(state) {
-  if (state) {
-    btnLoader.hidden = false;
-    submitBtn.disabled = true;
-    btnText.textContent = 'Думаю…';
-  } else {
-    btnLoader.hidden = true;
-    submitBtn.disabled = false;
-    btnText.textContent = 'Сформировать запрос';
-  }
+  btnLoader.hidden = !state;
+  submitBtn.disabled = state;
+  btnText.textContent = state ? 'Думаю…' : 'Сформировать запрос';
 }
 
 /* === GAS API === */
@@ -38,14 +32,11 @@ const API_URL =
 
 /* ===== state ===== */
 let currentSessionId = null;
+let cycleIndex = 0;      // сколько РЕАЛЬНО получено тренировок
+let cycleTotal = 0;
+let cycleFocusText = '';
 
 /* ===== helpers ===== */
-
-function parseKyu(value) {
-  if (!value) return null;
-  const n = parseInt(String(value).replace(/\D/g, ''), 10);
-  return Number.isFinite(n) ? n : null;
-}
 
 function numOrNull(v) {
   if (v === null || v === undefined || v === '') return null;
@@ -53,30 +44,40 @@ function numOrNull(v) {
   return Number.isFinite(n) ? n : null;
 }
 
+function parseKyu(value) {
+  if (!value) return null;
+  const n = parseInt(String(value).replace(/\D/g, ''), 10);
+  return Number.isFinite(n) ? n : null;
+}
+
+function focusToText(focus) {
+  if (!focus) return 'общей подготовке';
+  if (focus.includes('physics')) return 'физической подготовке';
+  if (focus.includes('technique')) return 'технике';
+  if (focus.includes('kata')) return 'ката';
+  if (focus.includes('sparring')) return 'спарринге';
+  return 'общей подготовке';
+}
+
+function setCycleTitle() {
+  titleEl.textContent = `Тренировка ${cycleIndex} из ${cycleTotal}. Фокус на ${cycleFocusText}`;
+}
+
 /* ===== payload ===== */
 
 function buildPayload() {
   const fd = new FormData(form);
-
   const format = fd.get('format');
   const mode = format && format.startsWith('cycle') ? 'cycle' : 'single';
-
-  const ageFrom = numOrNull(fd.get('age_from'));
-  let ageTo = numOrNull(fd.get('age_to'));
-  if (ageFrom !== null && ageTo === null) ageTo = ageFrom;
-
-  const kyuFrom = parseKyu(fd.get('kyu_from'));
-  let kyuTo = parseKyu(fd.get('kyu_to'));
-  if (kyuFrom !== null && kyuTo === null) kyuTo = kyuFrom;
 
   const focus = fd.getAll('focus').join(',');
 
   const payload = {
     mode,
-    age_from: ageFrom,
-    age_to: ageTo,
-    kyu_from: kyuFrom,
-    kyu_to: kyuTo,
+    age_from: numOrNull(fd.get('age_from')),
+    age_to: numOrNull(fd.get('age_to')),
+    kyu_from: parseKyu(fd.get('kyu_from')),
+    kyu_to: parseKyu(fd.get('kyu_to')),
     goal: fd.get('goal') === 'training' ? 'normal' : fd.get('goal'),
     focus
   };
@@ -94,13 +95,35 @@ function buildPayload() {
 async function callAPI(paramsObj) {
   const params = new URLSearchParams();
   Object.entries(paramsObj).forEach(([k, v]) => {
-    if (v !== null && v !== undefined && v !== '') {
-      params.set(k, v);
-    }
+    if (v !== null && v !== undefined && v !== '') params.set(k, v);
   });
-
   const res = await fetch(`${API_URL}?${params.toString()}`);
   return await res.json();
+}
+
+/* ===== render ===== */
+
+function renderTraining(training) {
+  blocksEl.innerHTML = '';
+
+  if (training.short_blocks) {
+    training.short_blocks
+      .split('→')
+      .map(p => p.trim())
+      .filter(Boolean)
+      .forEach(p => {
+        const li = document.createElement('li');
+        li.textContent = p;
+        blocksEl.appendChild(li);
+      });
+  }
+
+  detailsContent.textContent = training.full_plan || '';
+  detailsBtn.hidden = !training.full_plan;
+  trainingDetails.hidden = true;
+
+  form.hidden = true;
+  result.hidden = false;
 }
 
 /* ===== submit ===== */
@@ -117,84 +140,37 @@ form.addEventListener('submit', async (e) => {
     const data = await callAPI(payload);
     setLoading(false);
 
-    output.textContent += '\n\n--- SERVER ---\n';
-    output.textContent += JSON.stringify(data, null, 2);
+    if (data.status !== 'ok') return;
 
-    if (data.status !== 'ok') {
-      output.textContent += `\n\n[Ошибка]: ${data.message}`;
-      return;
-    }
-
-    // === СТАРТ ЦИКЛА ===
+    // === ЦИКЛ ===
     if (payload.mode === 'cycle') {
       currentSessionId = data.session_id;
+
+      cycleIndex = 0; // ВАЖНО: нулевая, ждём first next
+      cycleTotal = payload.weeks * payload.trainings_per_week;
+      cycleFocusText = focusToText(payload.focus);
 
       form.hidden = true;
       result.hidden = false;
 
-      titleEl.textContent = 'Цикл тренировок запущен';
+      titleEl.textContent = 'Цикл запущен';
       blocksEl.innerHTML = '';
-      detailsContent.textContent = '';
 
-      acceptBtn.hidden = true;
-      acceptCycleBtn.hidden = true;
       nextBtn.hidden = false;
+      acceptBtn.hidden = true;
       return;
     }
 
-    // === РАЗОВАЯ ТРЕНИРОВКА ===
+    // === РАЗОВАЯ ===
     renderTraining(data.training);
-    currentSessionId = null;
+    titleEl.textContent = data.training.title || 'Тренировка';
 
-    acceptBtn.hidden = false;
-    acceptCycleBtn.hidden = true;
-    nextBtn.hidden = true;
-
-  } catch (err) {
+  } catch {
     setLoading(false);
-    output.textContent += `\n\n[Ошибка соединения]: ${err.message}`;
   }
 });
 
-/* ===== render ===== */
-
-function renderTraining(training) {
-  titleEl.textContent = training.title || 'Тренировка';
-
-  blocksEl.innerHTML = '';
-  if (training.short_blocks) {
-    String(training.short_blocks)
-      .split('→')
-      .map(p => p.trim())
-      .filter(Boolean)
-      .forEach(p => {
-        const li = document.createElement('li');
-        li.textContent = p;
-        li.style.fontWeight = '600';
-        blocksEl.appendChild(li);
-      });
-  }
-
-  if (training.full_plan) {
-    detailsContent.textContent = training.full_plan;
-    detailsBtn.hidden = false;
-    trainingDetails.hidden = true;
-    detailsBtn.textContent = 'Показать полный план';
-  } else {
-    detailsBtn.hidden = true;
-    trainingDetails.hidden = true;
-    detailsContent.textContent = '';
-  }
-
-  form.hidden = true;
-  result.hidden = false;
-}
-
-/* ===== buttons ===== */
-
-acceptBtn.addEventListener('click', () => {
-  acceptBtn.hidden = true;
-});
+/* ===== next ===== */
 
 nextBtn.addEventListener('click', async () => {
   if (!currentSessionId) return;
@@ -209,9 +185,11 @@ nextBtn.addEventListener('click', async () => {
 
     setLoading(false);
 
-    if (data.status === 'ok') {
+    if (data.status === 'ok' && data.training) {
+      cycleIndex++;              // ← СЧИТАЕМ ТОЛЬКО ТУТ
       renderTraining(data.training);
-      nextBtn.hidden = false;
+      setCycleTitle();
+      return;
     }
 
     if (data.status === 'done') {
@@ -219,38 +197,20 @@ nextBtn.addEventListener('click', async () => {
       titleEl.textContent = 'Цикл завершён';
     }
 
-  } catch (e) {
+  } catch {
     setLoading(false);
-    alert('Ошибка получения следующей тренировки');
   }
-});
-
-/* ===== details toggle ===== */
-
-detailsBtn.addEventListener('click', () => {
-  const show = trainingDetails.hidden;
-  trainingDetails.hidden = !show;
-  detailsBtn.textContent = show
-    ? 'Скрыть полный план'
-    : 'Показать полный план';
 });
 
 /* ===== reset ===== */
 
 resetBtn.addEventListener('click', () => {
   currentSessionId = null;
+  cycleIndex = 0;
+  cycleTotal = 0;
 
   result.hidden = true;
   form.hidden = false;
-
   blocksEl.innerHTML = '';
   detailsContent.textContent = '';
-  trainingDetails.hidden = true;
-  detailsBtn.hidden = true;
-
-  acceptBtn.hidden = false;
-  acceptCycleBtn.hidden = true;
-  nextBtn.hidden = true;
-
-  output.textContent = '';
 });
