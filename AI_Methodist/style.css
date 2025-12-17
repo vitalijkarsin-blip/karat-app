@@ -184,6 +184,8 @@ select:focus {
   align-items: flex-start;
 }
 
+/* ===== BUTTON ===== */
+
 button {
   background: linear-gradient(120deg, var(--accent), var(--accent-strong));
   color: #0b1021;
@@ -208,11 +210,29 @@ button:active {
   box-shadow: 0 10px 24px rgba(14, 165, 233, 0.28);
 }
 
-.hint {
-  margin: 0;
-  color: var(--muted);
-  font-size: 0.92rem;
+button:disabled {
+  opacity: 0.85;
+  cursor: not-allowed;
 }
+
+/* ===== BUTTON LOADER ===== */
+
+.submit-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.btn-loader {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(11,16,33,0.35);
+  border-top-color: #0b1021;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+/* ===== DEBUG ===== */
 
 #output {
   margin-top: 12px;
@@ -238,40 +258,6 @@ button:active {
   .radio-row {
     gap: 8px;
   }
-}
-
-/* ===== LOADER ===== */
-.loader {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.55);
-  backdrop-filter: blur(4px);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  z-index: 9999;
-  color: #fff;
-  font-family: inherit;
-}
-
-.loader.hidden {
-  display: none;
-}
-
-.spinner {
-  width: 56px;
-  height: 56px;
-  border: 5px solid rgba(255,255,255,0.3);
-  border-top-color: #fff;
-  border-radius: 50%;
-  animation: spin 0.9s linear infinite;
-}
-
-.loader-text {
-  margin-top: 14px;
-  font-size: 16px;
-  opacity: 0.9;
 }
 
 @keyframes spin {

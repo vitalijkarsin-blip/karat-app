@@ -15,21 +15,21 @@ const resetBtn = document.getElementById('resetBtn');
 
 const output = document.getElementById('output');
 
-/* ===== LOADER ===== */
-let loader = null;
-function getLoader() {
-  if (!loader) {
-    loader = document.getElementById('loader');
+/* ===== BUTTON LOADER ===== */
+const submitBtn = document.getElementById('submitBtn');
+const btnText = submitBtn.querySelector('.btn-text');
+const btnLoader = submitBtn.querySelector('.btn-loader');
+
+function setLoading(state) {
+  if (state) {
+    btnLoader.hidden = false;
+    submitBtn.disabled = true;
+    btnText.textContent = 'Думаю…';
+  } else {
+    btnLoader.hidden = true;
+    submitBtn.disabled = false;
+    btnText.textContent = 'Сформировать запрос';
   }
-  return loader;
-}
-function showLoader() {
-  const el = getLoader();
-  if (el) el.classList.remove('hidden');
-}
-function hideLoader() {
-  const el = getLoader();
-  if (el) el.classList.add('hidden');
 }
 
 /* === GAS API === */
@@ -111,12 +111,11 @@ form.addEventListener('submit', async (e) => {
   const payload = buildPayload();
   output.textContent = JSON.stringify(payload, null, 2);
 
-  showLoader();
+  setLoading(true);
 
   try {
     const data = await callAPI(payload);
-
-    hideLoader();
+    setLoading(false);
 
     output.textContent += '\n\n--- SERVER ---\n';
     output.textContent += JSON.stringify(data, null, 2);
@@ -140,7 +139,6 @@ form.addEventListener('submit', async (e) => {
       acceptBtn.hidden = true;
       acceptCycleBtn.hidden = true;
       nextBtn.hidden = false;
-
       return;
     }
 
@@ -153,7 +151,7 @@ form.addEventListener('submit', async (e) => {
     nextBtn.hidden = true;
 
   } catch (err) {
-    hideLoader();
+    setLoading(false);
     output.textContent += `\n\n[Ошибка соединения]: ${err.message}`;
   }
 });
@@ -201,7 +199,7 @@ acceptBtn.addEventListener('click', () => {
 nextBtn.addEventListener('click', async () => {
   if (!currentSessionId) return;
 
-  showLoader();
+  setLoading(true);
 
   try {
     const data = await callAPI({
@@ -209,7 +207,7 @@ nextBtn.addEventListener('click', async () => {
       session_id: currentSessionId
     });
 
-    hideLoader();
+    setLoading(false);
 
     if (data.status === 'ok') {
       renderTraining(data.training);
@@ -222,7 +220,7 @@ nextBtn.addEventListener('click', async () => {
     }
 
   } catch (e) {
-    hideLoader();
+    setLoading(false);
     alert('Ошибка получения следующей тренировки');
   }
 });
