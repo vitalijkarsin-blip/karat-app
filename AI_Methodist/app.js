@@ -15,6 +15,23 @@ const resetBtn = document.getElementById('resetBtn');
 
 const output = document.getElementById('output');
 
+/* ===== LOADER ===== */
+let loader = null;
+function getLoader() {
+  if (!loader) {
+    loader = document.getElementById('loader');
+  }
+  return loader;
+}
+function showLoader() {
+  const el = getLoader();
+  if (el) el.classList.remove('hidden');
+}
+function hideLoader() {
+  const el = getLoader();
+  if (el) el.classList.add('hidden');
+}
+
 /* === GAS API === */
 const API_URL =
   'https://script.google.com/macros/s/AKfycbzgoa-9hjklCxdhS8WAJRNwqOFiU3Pqno8q0yvZ1WbELmBEL9uLqP7P967MEmDhy2Ii/exec';
@@ -94,8 +111,12 @@ form.addEventListener('submit', async (e) => {
   const payload = buildPayload();
   output.textContent = JSON.stringify(payload, null, 2);
 
+  showLoader();
+
   try {
     const data = await callAPI(payload);
+
+    hideLoader();
 
     output.textContent += '\n\n--- SERVER ---\n';
     output.textContent += JSON.stringify(data, null, 2);
@@ -132,6 +153,7 @@ form.addEventListener('submit', async (e) => {
     nextBtn.hidden = true;
 
   } catch (err) {
+    hideLoader();
     output.textContent += `\n\n[Ошибка соединения]: ${err.message}`;
   }
 });
@@ -179,11 +201,15 @@ acceptBtn.addEventListener('click', () => {
 nextBtn.addEventListener('click', async () => {
   if (!currentSessionId) return;
 
+  showLoader();
+
   try {
     const data = await callAPI({
       action: 'next',
       session_id: currentSessionId
     });
+
+    hideLoader();
 
     if (data.status === 'ok') {
       renderTraining(data.training);
@@ -196,6 +222,7 @@ nextBtn.addEventListener('click', async () => {
     }
 
   } catch (e) {
+    hideLoader();
     alert('Ошибка получения следующей тренировки');
   }
 });
