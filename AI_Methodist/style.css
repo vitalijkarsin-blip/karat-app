@@ -383,3 +383,7 @@ body {
 .secondary-btn:active {
   box-shadow: 0 8px 20px rgba(34, 197, 94, 0.3);
 }
+
+.hidden {
+  display: none;
+}
