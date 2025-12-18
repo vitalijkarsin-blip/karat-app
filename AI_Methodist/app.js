@@ -72,12 +72,21 @@ function buildPayload() {
 
   const focus = fd.getAll('focus').join(',');
 
+  let age_from = numOrNull(fd.get('age_from'));
+  let age_to   = numOrNull(fd.get('age_to'));
+  let kyu_from = parseKyu(fd.get('kyu_from'));
+  let kyu_to   = parseKyu(fd.get('kyu_to'));
+
+  // === ЖЁСТКАЯ НОРМАЛИЗАЦИЯ ДИАПАЗОНОВ (ФРОНТ) ===
+  if (age_from !== null && age_to === null) age_to = age_from;
+  if (kyu_from !== null && kyu_to === null) kyu_to = kyu_from;
+
   const payload = {
     mode,
-    age_from: numOrNull(fd.get('age_from')),
-    age_to: numOrNull(fd.get('age_to')),
-    kyu_from: parseKyu(fd.get('kyu_from')),
-    kyu_to: parseKyu(fd.get('kyu_to')),
+    age_from,
+    age_to,
+    kyu_from,
+    kyu_to,
     goal: fd.get('goal') === 'training' ? 'normal' : fd.get('goal'),
     focus
   };
