@@ -345,3 +345,18 @@ body {
     text-align: left;
   }
 }
+
+.secondary-btn {
+  background: linear-gradient(120deg, #22c55e, #4ade80);
+  color: #052e16;
+  box-shadow: 0 10px 26px rgba(34, 197, 94, 0.35);
+}
+
+.secondary-btn:hover {
+  box-shadow: 0 12px 30px rgba(34, 197, 94, 0.45);
+  filter: brightness(1.03);
+}
+
+.secondary-btn:active {
+  box-shadow: 0 8px 20px rgba(34, 197, 94, 0.3);
+}
