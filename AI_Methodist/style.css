@@ -276,3 +276,51 @@ button:disabled {
     display: none;
   }
 }
+
+#trainingBlocks {
+  font-size: 1.15rem;
+  line-height: 1.75;
+  margin-top: 12px;
+}
+
+#trainingBlocks li {
+  margin-bottom: 6px;
+}
+
+#detailsContent {
+  font-size: 1.05rem;
+  line-height: 1.7;
+}
+
+input,
+select,
+textarea,
+button {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.field,
+.range-row,
+.radio-row,
+.checkbox-grid,
+.actions {
+  min-width: 0;
+}
+
+.chip,
+.checkbox {
+  max-width: 100%;
+  white-space: nowrap;
+}
+
+@media (max-width: 420px) {
+  .chip,
+  .checkbox {
+    white-space: normal;
+  }
+}
+
+body {
+  overflow-x: hidden;
+}
