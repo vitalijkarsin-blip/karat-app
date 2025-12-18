@@ -324,3 +324,24 @@ button {
 body {
   overflow-x: hidden;
 }
+
+#detailsContent {
+  white-space: pre-wrap;      /* разрешаем перенос строк */
+  word-wrap: break-word;      /* ломаем длинные слова */
+  overflow-wrap: anywhere;    /* принудительный перенос если надо */
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.input-short {
+  width: 6ch;          /* визуально ~2–3 цифры */
+  min-width: 4.5ch;
+  text-align: center;
+}
+
+@media (max-width: 420px) {
+  .input-short {
+    width: 100%;
+    text-align: left;
+  }
+}
