@@ -32,7 +32,7 @@ const API_URL =
 
 /* ===== state ===== */
 let currentSessionId = null;
-let cycleIndex = 0;      // сколько РЕАЛЬНО получено тренировок
+let cycleIndex = 0;
 let cycleTotal = 0;
 let cycleFocusText = '';
 
@@ -68,7 +68,7 @@ function setCycleTitle() {
 function buildPayload() {
   const fd = new FormData(form);
   const format = fd.get('format');
-  const mode = format && format.startsWith('cycle') ? 'cycle' : 'single';
+  const mode = format && format !== 'single' ? 'cycle' : 'single';
 
   const focus = fd.getAll('focus');
 
@@ -77,7 +77,6 @@ function buildPayload() {
   let kyu_from = parseKyu(fd.get('kyu_from'));
   let kyu_to   = parseKyu(fd.get('kyu_to'));
 
-  // === ЖЁСТКАЯ НОРМАЛИЗАЦИЯ ДИАПАЗОНОВ (ФРОНТ) ===
   if (age_from !== null && age_to === null) age_to = age_from;
   if (kyu_from !== null && kyu_to === null) kyu_to = kyu_from;
 
@@ -92,7 +91,7 @@ function buildPayload() {
   };
 
   if (mode === 'cycle') {
-    payload.weeks = numOrNull(fd.get('weeks'));
+    payload.weeks = String(format).includes('2') ? 2 : 4;
     payload.trainings_per_week = numOrNull(fd.get('trainings_per_week'));
   }
 
@@ -117,7 +116,7 @@ function renderTraining(training) {
 
   if (training.short_blocks) {
     String(training.short_blocks)
-      .split('\u2192')
+      .split('→')
       .map(p => p.trim())
       .filter(Boolean)
       .forEach(p => {
@@ -131,8 +130,9 @@ function renderTraining(training) {
   detailsContent.textContent = hasDetails ? training.full_plan : '';
   detailsBtn.hidden = !hasDetails;
   trainingDetails.hidden = true;
+
   if (hasDetails) {
-    detailsBtn.textContent = '\u041f\u043e\u043a\u0430\u0437\u0430\u0442\u044c \u043f\u043e\u043b\u043d\u044b\u0439 \u043f\u043b\u0430\u043d';
+    detailsBtn.textContent = 'Показать полный план';
   }
 
   form.hidden = true;
@@ -155,37 +155,34 @@ form.addEventListener('submit', async (e) => {
 
     if (data.status !== 'ok') return;
 
-    // === ЦИКЛ ===
-if (payload.mode === 'cycle') {
-  currentSessionId = data.session_id;
+    if (payload.mode === 'cycle') {
+      currentSessionId = data.session_id;
 
-  cycleIndex = 0;
-  cycleTotal = payload.weeks * payload.trainings_per_week;
-  cycleFocusText = focusToText(payload.focus);
+      cycleIndex = 0;
+      cycleTotal = payload.weeks * payload.trainings_per_week;
+      cycleFocusText = focusToText(payload.focus);
 
-  form.hidden = true;
-  result.hidden = false;
-  blocksEl.innerHTML = '';
+      form.hidden = true;
+      result.hidden = false;
+      blocksEl.innerHTML = '';
 
-  // ⬇️ СРАЗУ ЗАПРАШИВАЕМ ПЕРВУЮ ТРЕНИРОВКУ ЦИКЛА
-  const firstTraining = await callAPI({
-    action: 'next',
-    session_id: currentSessionId
-  });
+      const firstTraining = await callAPI({
+        action: 'next',
+        session_id: currentSessionId
+      });
 
-  if (firstTraining.status === 'ok' && firstTraining.training) {
-    cycleIndex = 1;
-    renderTraining(firstTraining.training);
-    setCycleTitle();
-    nextBtn.hidden = false;
-  }
+      if (firstTraining.status === 'ok' && firstTraining.training) {
+        cycleIndex = 1;
+        renderTraining(firstTraining.training);
+        setCycleTitle();
+        nextBtn.hidden = false;
+      }
 
-  acceptBtn.hidden = true;
-  return;
-}
+      acceptBtn.hidden = true;
+      acceptCycleBtn.hidden = true;
+      return;
+    }
 
-
-    // === РАЗОВАЯ ===
     renderTraining(data.training);
     titleEl.textContent = data.training.title || 'Тренировка';
 
@@ -210,7 +207,7 @@ nextBtn.addEventListener('click', async () => {
     setLoading(false);
 
     if (data.status === 'ok' && data.training) {
-      cycleIndex++;              // СЧИТАЕМ ТОЛЬКО ТУТ
+      cycleIndex++;
       renderTraining(data.training);
       setCycleTitle();
       return;
@@ -232,8 +229,8 @@ detailsBtn.addEventListener('click', () => {
   const isHidden = trainingDetails.hidden;
   trainingDetails.hidden = !isHidden;
   detailsBtn.textContent = isHidden
-    ? '\u0421\u043a\u0440\u044b\u0442\u044c \u043f\u043e\u043b\u043d\u044b\u0439 \u043f\u043b\u0430\u043d'
-    : '\u041f\u043e\u043a\u0430\u0437\u0430\u0442\u044c \u043f\u043e\u043b\u043d\u044b\u0439 \u043f\u043b\u0430\u043d';
+    ? 'Скрыть полный план'
+    : 'Показать полный план';
 });
 
 /* ===== reset ===== */
