@@ -334,9 +334,9 @@ body {
 }
 
 .input-short {
-  width: 8ch;          /* визуально ~2–3 цифры */
-  min-width: 4ch;
-   max-width: 8ch;
+  width: 10ch;          /* визуально ~2–3 цифры */
+  min-width: 6ch;
+   max-width: 10ch;
   text-align: center;
 }
 
