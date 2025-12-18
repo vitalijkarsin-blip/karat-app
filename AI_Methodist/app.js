@@ -55,7 +55,7 @@ function focusToText(focus) {
   if (focus.includes('physics')) return 'физической подготовке';
   if (focus.includes('technique')) return 'технике';
   if (focus.includes('kata')) return 'ката';
-  if (focus.includes('sparring')) return 'спарринге';
+  if (focus.includes('kumite')) return 'кумите';
   return 'общей подготовке';
 }
 
@@ -70,7 +70,7 @@ function buildPayload() {
   const format = fd.get('format');
   const mode = format && format.startsWith('cycle') ? 'cycle' : 'single';
 
-  const focus = fd.getAll('focus').join(',');
+  const focus = fd.getAll('focus');
 
   let age_from = numOrNull(fd.get('age_from'));
   let age_to   = numOrNull(fd.get('age_to'));
@@ -156,23 +156,34 @@ form.addEventListener('submit', async (e) => {
     if (data.status !== 'ok') return;
 
     // === ЦИКЛ ===
-    if (payload.mode === 'cycle') {
-      currentSessionId = data.session_id;
+if (payload.mode === 'cycle') {
+  currentSessionId = data.session_id;
 
-      cycleIndex = 0; // ВАЖНО: нулевая, ждём first next
-      cycleTotal = payload.weeks * payload.trainings_per_week;
-      cycleFocusText = focusToText(payload.focus);
+  cycleIndex = 0;
+  cycleTotal = payload.weeks * payload.trainings_per_week;
+  cycleFocusText = focusToText(payload.focus);
 
-      form.hidden = true;
-      result.hidden = false;
+  form.hidden = true;
+  result.hidden = false;
+  blocksEl.innerHTML = '';
 
-      titleEl.textContent = 'Цикл запущен';
-      blocksEl.innerHTML = '';
+  // ⬇️ СРАЗУ ЗАПРАШИВАЕМ ПЕРВУЮ ТРЕНИРОВКУ ЦИКЛА
+  const firstTraining = await callAPI({
+    action: 'next',
+    session_id: currentSessionId
+  });
 
-      nextBtn.hidden = false;
-      acceptBtn.hidden = true;
-      return;
-    }
+  if (firstTraining.status === 'ok' && firstTraining.training) {
+    cycleIndex = 1;
+    renderTraining(firstTraining.training);
+    setCycleTitle();
+    nextBtn.hidden = false;
+  }
+
+  acceptBtn.hidden = true;
+  return;
+}
+
 
     // === РАЗОВАЯ ===
     renderTraining(data.training);
