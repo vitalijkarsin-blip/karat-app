@@ -340,12 +340,34 @@ body {
   text-align: center;
 }
 
-@media (max-width: 420px) {
+    /* @media (max-width: 420px) {
   .input-short {
     width: 100%;
     text-align: left;
   }
+} */
+
+@media (max-width: 420px) {
+  .range-row {
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .dash {
+    display: inline;
+    margin: 0 4px;
+  }
+
+  .input-short {
+    width: 6ch;        /* компактно, но удобно пальцем */
+    min-width: 6ch;
+    max-width: 8ch;
+    text-align: center;
+  }
 }
+
 
 .secondary-btn {
   background: linear-gradient(120deg, #22c55e, #4ade80);
