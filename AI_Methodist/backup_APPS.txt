@@ -1,0 +1,353 @@
+/*************************************************
+ * AI_Methodist — GAS backend (FINAL METHODICAL MODE)
+ * Provider: OpenAI (GPT)
+ *************************************************/
+
+const SPREADSHEET_ID = '14HEi2tJXeFY46f9j12XIC-1STt45tz8CWzIDJO10A70';
+const KYOKUSHIN_DB_SPREADSHEET_ID = '1oOPiDpFmkJCY2RnOUnNRDG1vh7SifwrlMo_2-SSy5-Y';
+
+function KYOKUSHIN_DB_ID_() {
+  return KYOKUSHIN_DB_SPREADSHEET_ID;
+}
+
+/* ============== ENTRY ============== */
+function doGet(e) {
+  try {
+    const p = e && e.parameter ? e.parameter : {};
+
+    if (p.action === 'next' && p.session_id) {
+      return nextTraining_(p.session_id);
+    }
+
+    const payload = {
+      mode: p.mode === 'cycle' ? 'cycle' : 'single',
+      age_from: num_(p.age_from),
+      age_to: num_(p.age_to),
+      kyu_from: kyu_(p.kyu_from),
+      kyu_to: kyu_(p.kyu_to),
+      goal: normalizeGoal_(p.goal),
+      focus: list_(p.focus),
+      total_time_min: num_(p.total_time_min) || 95
+    };
+
+    // === RANGE NORMALIZATION (ЖЁСТКО) ===
+    if (payload.age_from != null && payload.age_to == null) payload.age_to = payload.age_from;
+    if (payload.kyu_from != null && payload.kyu_to == null) payload.kyu_to = payload.kyu_from;
+
+    // === CHILD RULES (age <= 6) ===
+    const ageMax = payload.age_to;
+    if (ageMax != null && ageMax <= 6) {
+      // жёстко ограничиваем длительность
+      const t = payload.total_time_min;
+      payload.total_time_min = Math.max(30, Math.min(40, t || 35));
+
+      // убираем kata из фокуса полностью
+      payload.focus = (payload.focus || []).filter(f => String(f).toLowerCase() !== 'kata');
+    }
+
+    // === CYCLE MODE ===
+    if (payload.mode === 'cycle') {
+      const weeks = num_(p.weeks);
+      const tpw = num_(p.trainings_per_week);
+      if (!weeks || !tpw) throw new Error('weeks and trainings_per_week required');
+
+      const sessionId = startCycle_({
+        weeks,
+        trainings_per_week: tpw,
+        focus: payload.focus,
+        goal: payload.goal,
+        age_from: payload.age_from,
+        age_to: payload.age_to,
+        kyu_from: payload.kyu_from,
+        kyu_to: payload.kyu_to,
+        total_time_min: payload.total_time_min
+      });
+
+      return json_({ status: 'ok', session_id: sessionId });
+    }
+
+    const ctx = buildContext_(payload, null);
+    const skeleton = generateSkeleton_(ctx);
+    const trainingText = generateExpandedTraining_(ctx, skeleton);
+    const training = parseTrainingText_(trainingText);
+
+    return json_({ status: 'ok', training });
+
+  } catch (err) {
+    return json_({ status: 'error', message: String(err.message || err) });
+  }
+}
+
+/* ============== OPENAI ============== */
+function callOpenAI_(systemPrompt, userPrompt, opts) {
+  const apiKey = PropertiesService.getScriptProperties().getProperty('OPENAI_API_KEY');
+  if (!apiKey) throw new Error('OPENAI_API_KEY missing');
+
+  const model = (opts && opts.model) || 'gpt-4o-mini';
+  const temperature = (opts && typeof opts.temperature === 'number') ? opts.temperature : 0.15;
+  const maxTokens = (opts && opts.max_tokens) || 2200;
+
+  const res = UrlFetchApp.fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'post',
+    contentType: 'application/json',
+    headers: { Authorization: 'Bearer ' + apiKey },
+    payload: JSON.stringify({
+      model,
+      temperature,
+      max_tokens: maxTokens,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt }
+      ]
+    })
+  });
+
+  const data = JSON.parse(res.getContentText());
+  return String(((data.choices || [])[0] || {}).message?.content || '').trim();
+}
+
+/* ============== CORE ============== */
+function buildContext_(payload, cycleMeta) {
+  if (payload.age_from == null || payload.age_to == null) throw new Error('age required');
+  if (payload.kyu_from == null || payload.kyu_to == null) throw new Error('kyu required');
+
+  return {
+    payload,
+    cycle: cycleMeta,
+    ageMid: Math.round((payload.age_from + payload.age_to) / 2),
+    kyuTarget: Math.min(payload.kyu_from, payload.kyu_to)
+  };
+}
+
+function generateSkeleton_(ctx) {
+  const raw = callOpenAI_(
+    SYSTEM_PROMPT_SKELETON_(),
+    USER_PROMPT_SKELETON_(ctx),
+    { temperature: 0.1, max_tokens: 1200 }
+  );
+
+  const json = safeJsonExtract_(raw);
+  if (!json || !json.structure) throw new Error('Invalid skeleton');
+  return json;
+}
+
+function generateExpandedTraining_(ctx, skeleton) {
+  return callOpenAI_(
+    SYSTEM_PROMPT_EXPAND_(),
+    USER_PROMPT_EXPAND_(ctx, skeleton),
+    { temperature: 0.15, max_tokens: 2000 }
+  );
+}
+
+/* ============== PROMPTS ============== */
+
+function SYSTEM_PROMPT_SKELETON_() {
+  return [
+    'Ты — методист киокушинкай.',
+    'Ты формируешь МЕТОДИЧЕСКИЙ КАРКАС тренировки.',
+    '',
+    'ГЛАВНОЕ ПРАВИЛО ФОКУСА:',
+    '- Основной fokus ОБЯЗАН занимать 40–50% общего времени тренировки.',
+    '',
+    'ПРАВИЛО ПРИОРИТЕТА ЦЕЛИ:',
+    '- goal ВСЕГДА важнее, чем fokus.',
+    '',
+    '- Если goal = "tournament":',
+    '  - fokus "kumite" считается ГЛАВНЫМ,',
+    '    даже если "physics" указана первой.',
+    '  - Физическая подготовка является ВСПОМОГАТЕЛЬНОЙ.',
+    '  - Кумитэ должно занимать 40–50% тренировки.',
+    '',
+    'ВОЗРАСТНОЕ ПРАВИЛО (КРИТИЧЕСКОЕ):',
+    '- Если возрастная группа 4–6 лет:',
+    '  - ИГРОВАЯ часть является ГЛАВНОЙ.',
+    '  - Игровые и подвижные задания должны',
+    '    занимать не менее 40–50% тренировки.',
+    '  - Физика и техника используются ТОЛЬКО в игровой форме.',
+    '  - КАТА ЗАПРЕЩЕНА. Не включать блоки или акценты ката.',
+    '',
+    'ГЛАВНОЕ ПРАВИЛО ЦИКЛА:',
+    '- Ты НЕ меняешь время блоков от тренировки к тренировке.',
+    '- Ты НЕ перераспределяешь минуты между блоками.',
+    '',
+    'ВОЛНООБРАЗНОСТЬ ВНУТРИ ЦИКЛА:',
+    '- week 1: вводная, умеренная плотность.',
+    '- week 2: рабочая, повышенная плотность.',
+    '- week 3: усиленная, высокая плотность.',
+    '- week 4: закрепляющая, акцент на качество.',
+    '',
+    'СПОСОБ РЕАЛИЗАЦИИ ВОЛНЫ:',
+    '- Меняется плотность, темп и количество элементов.',
+    '- НЕ меняется длительность блоков и структура.',
+    '',
+    'Вывод СТРОГО JSON. Без текста.'
+  ].join('\n');
+}
+
+
+
+function USER_PROMPT_SKELETON_(ctx) {
+  const x = ctx.payload;
+
+  return [
+    'Данные:',
+    `age: ${x.age_from}-${x.age_to}`,
+    `kyu: ${x.kyu_from}-${x.kyu_to}`,
+    `goal: ${x.goal}`,
+    `focus: ${JSON.stringify(x.focus || [])}`,
+    `total_time_min: ${x.total_time_min}`,
+    '',
+    'Сформируй JSON структуры тренировки так,',
+    'чтобы блоки по fokus суммарно занимали 40–50% времени.',
+    '',
+    'Формат:',
+    '{',
+    ' "structure": {',
+    '   "blocks": [',
+    '     { "name": "<название>", "time_min": <число> }',
+    '   ]',
+    ' }',
+    '}'
+  ].join('\n');
+}
+
+function SYSTEM_PROMPT_EXPAND_() { 
+  return [
+    'Ты — методист киокушин-каратэ.',
+    '',
+    'ТЫ НЕ ПИШЕШЬ:',
+    '- конкретные удары',
+    '- названия стоек',
+    '- секунды, тайминги, подходы и повторы',
+    '',
+    'ТЫ ПИШЕШЬ:',
+    '- ОБЩИЙ МЕТОДИЧЕСКИЙ ПЛАН ТРЕНИРОВКИ',
+    '- блоки и подпункты',
+    '- методические акценты',
+    '- варианты ("или", "на выбор")',
+    '',
+    'ОСНОВНОЙ ФОКУС ОБЯЗАН ЗАНИМАТЬ 40–50% ТРЕНИРОВКИ.',
+    '',
+    'УЧЁТ ЦЕЛИ ТРЕНИРОВКИ:',
+    '- goal = tournament → приоритет боевая подготовка, пары, спарринги.',
+    '- goal = exam → приоритет техника, структура, ката (ЕСЛИ РАЗРЕШЕНО ВОЗРАСТОМ).',
+    '- goal = normal → сбалансированная тренировка.',
+    '',
+    'ЦИКЛИЧНОСТЬ (ОБЯЗАТЕЛЬНО):',
+    '- Учитывай week_in_cycle.',
+    '- Неделя 1: вводный характер, умеренный темп, меньше элементов.',
+    '- Неделя 2: рабочий характер, средний темп, больше элементов.',
+    '- Неделя 3: усиленный характер, высокая плотность, больше элементов.',
+    '- Неделя 4: закрепляющий характер, снижение плотности, акцент на качество.',
+    '',
+    'СПОСОБ ПРОЯВЛЕНИЯ ЦИКЛА В ТЕКСТЕ:',
+    '- меняется количество элементов в подпунктах',
+    '- меняется характер формулировок (умеренно / рабоче / интенсивно)',
+    '- допускаются формулировки:',
+    '  "в умеренном темпе", "в рабочем темпе", "в интенсивном режиме",',
+    '  "с повышенной плотностью", "с акцентом на качество".',
+    '',
+    'ЗАПРЕЩЕНО:',
+    '- менять время блоков',
+    '- писать проценты, секунды и числовые показатели нагрузки',
+    '- использовать термины физиологической периодизации',
+    '',
+    '=== СПЕЦИАЛЬНОЕ ПРАВИЛО ТОЛЬКО ДЛЯ 3–6 ЛЕТ ===',
+    '- Если возраст 3–6 лет:',
+    '  - Общая длительность 30–40 минут.',
+    '  - Игровая часть главная.',
+    '  - Техника и физика ТОЛЬКО через игру.',
+    '  - КАТА ЗАПРЕЩЕНА.',
+    '',    'ИСКЛЮЧЕНИЕ ДЛЯ ФИЗИЧЕСКОЙ ПОДГОТОВКИ:',
+    '- Если основной fokus = "physics":',
+    '- В каждом подпункте физического блока',
+    '  указывать 2–3 конкретных общефизических упражнения через запятую.',
+    '- Допустимы ТОЛЬКО базовые упражнения:',
+    '  приседания, отжимания, планка, выпады, подъёмы корпуса, лодочка,',
+    '  гиперэкстензии, прыжки, бег, скакалка, упражнения на баланс,',
+    '  подвижные и координационные игры.',
+    '',
+    'ФОРМАТ:',
+    '- пункты 1–9',
+    '- диапазон времени ТОЛЬКО на уровень блока',
+    '- без markdown, без эмодзи, без служебного текста',
+    '',
+    'ВЫВОД: только текст плана тренировки.'
+  ].join('\n');
+}
+
+
+
+
+function USER_PROMPT_EXPAND_(ctx, skeleton) {
+  return [
+    'Контекст:',
+    `Возраст: ${ctx.payload.age_from}-${ctx.payload.age_to}`,
+    `Кю: ${ctx.payload.kyu_from}-${ctx.payload.kyu_to}`,
+    `Фокус: ${JSON.stringify(ctx.payload.focus || [])}`,
+    '',
+    'Каркас тренировки:',
+    JSON.stringify(skeleton, null, 2),
+    '',
+    'Сформируй ОБЩИЙ МЕТОДИЧЕСКИЙ ПЛАН,',
+    'где основной fokus занимает 40–50% времени.'
+  ].join('\n');
+}
+
+/* ============== CYCLE / UTILS / PARSE ============== */
+/* --- БЕЗ ИЗМЕНЕНИЙ --- */
+
+function startCycle_(config) {
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const sh = ss.getSheetByName('AI_CYCLES') || ss.insertSheet('AI_CYCLES');
+  if (sh.getLastRow() === 0) sh.appendRow(['session_id','created','index','config']);
+  const id = Utilities.getUuid();
+  sh.appendRow([id, new Date(), 0, JSON.stringify(config)]);
+  return id;
+}
+
+function nextTraining_(sessionId) {
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const sh = ss.getSheetByName('AI_CYCLES');
+  const data = sh.getDataRange().getValues();
+
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][0] === sessionId) {
+      const issued = Number(data[i][2]) || 0;
+      const cfg = JSON.parse(data[i][3]);
+      const total = cfg.weeks * cfg.trainings_per_week;
+      if (issued >= total) return json_({ status: 'done' });
+
+      const payload = Object.assign({}, cfg, { mode: 'cycle' });
+      const ctx = buildContext_(payload, null);
+      const skeleton = generateSkeleton_(ctx);
+      const text = generateExpandedTraining_(ctx, skeleton);
+
+      sh.getRange(i + 1, 3).setValue(issued + 1);
+      return json_({ status: 'ok', training: parseTrainingText_(text) });
+    }
+  }
+  throw new Error('Session not found');
+}
+
+function parseTrainingText_(txt){
+  return { title:'Тренировка', short_blocks:'', full_plan:String(txt||'').trim() };
+}
+
+/* ============== HELPERS ============== */
+
+function num_(v){ const n=parseInt(v,10); return isNaN(n)?null:n; }
+function kyu_(v){ const n=parseInt(String(v).replace(/\D/g,''),10); return isNaN(n)?null:n; }
+function list_(v){ if(Array.isArray(v))return v; if(!v)return[]; return String(v).split(',').map(s=>s.trim()); }
+function normalizeGoal_(g){ return String(g||'normal'); }
+function json_(o){ return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON); }
+
+function safeJsonExtract_(raw){
+  try { return JSON.parse(raw); } catch(e){}
+  const s=String(raw||'');
+  const a=s.indexOf('{'), b=s.lastIndexOf('}');
+  if(a>=0&&b>a) return JSON.parse(s.slice(a,b+1));
+  throw new Error('Invalid JSON');
+}
+
+
