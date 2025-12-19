@@ -30,6 +30,13 @@ function setLoading(state) {
 const API_URL =
   'https://script.google.com/macros/s/AKfycbzgoa-9hjklCxdhS8WAJRNwqOFiU3Pqno8q0yvZ1WbELmBEL9uLqP7P967MEmDhy2Ii/exec';
 
+
+/*====== statistica jpen======= */
+fetch(API_URL + '?action=stat&event=open_app').catch(()=>{});
+
+
+
+
 /* ===== state ===== */
 let currentSessionId = null;
 let cycleIndex = 0;
@@ -142,6 +149,9 @@ function renderTraining(training) {
 /* ===== submit ===== */
 
 form.addEventListener('submit', async (e) => {
+    /*==========statistica knopki ===========*/
+    fetch(API_URL + '?action=stat&event=generate_click').catch(()=>{});
+    /*end   */
   e.preventDefault();
 
   const payload = buildPayload();
