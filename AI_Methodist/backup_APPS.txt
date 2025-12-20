@@ -3,6 +3,9 @@
  * Provider: OpenAI (GPT)
  *************************************************/
 
+const STATS_SPREADSHEET_ID = '1CbPLjd8bCm9F05JksRmpkmIW5CiBaVjTNn5rllUmN2I';
+const STATS_SHEET_NAME = 'Events';
+
 const SPREADSHEET_ID = '14HEi2tJXeFY46f9j12XIC-1STt45tz8CWzIDJO10A70';
 const KYOKUSHIN_DB_SPREADSHEET_ID = '1oOPiDpFmkJCY2RnOUnNRDG1vh7SifwrlMo_2-SSy5-Y';
 
@@ -15,9 +18,22 @@ function doGet(e) {
   try {
     const p = e && e.parameter ? e.parameter : {};
 
+    // === STATS EVENT (ШАГ 5) ===
+    // ВАЖНО: статистика НЕ должна проваливаться дальше в генерацию.
+    if (p.action === 'stat' && p.event) {
+      saveStat_(String(p.event), p.extra != null ? String(p.extra) : '');
+      return json_({ status: 'ok' });
+    }
+
+    // === CYCLE: NEXT TRAINING ===
     if (p.action === 'next' && p.session_id) {
       return nextTraining_(p.session_id);
     }
+
+    let totalTime = num_(p.duration_minutes);
+    if (totalTime == null) totalTime = num_(p.total_time_min);
+    if (totalTime == null) totalTime = 95;
+
 
     const payload = {
       mode: p.mode === 'cycle' ? 'cycle' : 'single',
@@ -27,21 +43,23 @@ function doGet(e) {
       kyu_to: kyu_(p.kyu_to),
       goal: normalizeGoal_(p.goal),
       focus: list_(p.focus),
-      total_time_min: num_(p.total_time_min) || 95
+      total_time_min: totalTime
     };
+
 
     // === RANGE NORMALIZATION (ЖЁСТКО) ===
     if (payload.age_from != null && payload.age_to == null) payload.age_to = payload.age_from;
     if (payload.kyu_from != null && payload.kyu_to == null) payload.kyu_to = payload.kyu_from;
 
+    // === HARD VALIDATION (чтобы не было age:null-null) ===
+    if (payload.age_from == null || payload.age_to == null) throw new Error('age required');
+    if (payload.kyu_from == null || payload.kyu_to == null) throw new Error('kyu required');
+
     // === CHILD RULES (age <= 6) ===
     const ageMax = payload.age_to;
     if (ageMax != null && ageMax <= 6) {
-      // жёстко ограничиваем длительность
       const t = payload.total_time_min;
       payload.total_time_min = Math.max(30, Math.min(40, t || 35));
-
-      // убираем kata из фокуса полностью
       payload.focus = (payload.focus || []).filter(f => String(f).toLowerCase() !== 'kata');
     }
 
@@ -67,13 +85,17 @@ function doGet(e) {
     }
 
     const ctx = buildContext_(payload, null);
-    const skeleton = generateSkeleton_(ctx);
+    let skeleton = generateSkeleton_(ctx);
+    skeleton = normalizeSkeletonTime_(skeleton, payload.total_time_min);
     const trainingText = generateExpandedTraining_(ctx, skeleton);
+
     const training = parseTrainingText_(trainingText);
 
     return json_({ status: 'ok', training });
 
   } catch (err) {
+    // Чтобы видеть ошибки в статистике, но без влияния на выдачу
+    try { saveStat_('error', String(err.message || err)); } catch(e2) {}
     return json_({ status: 'error', message: String(err.message || err) });
   }
 }
@@ -146,6 +168,14 @@ function SYSTEM_PROMPT_SKELETON_() {
     'Ты — методист киокушинкай.',
     'Ты формируешь МЕТОДИЧЕСКИЙ КАРКАС тренировки.',
     '',
+    'ЖЁСТКОЕ ПРАВИЛО ВРЕМЕНИ:',
+    '- total_time_min — это МАКСИМАЛЬНАЯ допустимая длительность тренировки.',
+    '- Суммарное время всех блоков НЕ МОЖЕТ превышать total_time_min.',
+    '- Превышение времени ЗАПРЕЩЕНО.',
+    '- Если точное распределение невозможно,',
+    '  сокращай второстепенные блоки,',
+    '  но НЕ превышай указанное время.',
+    '',
     'ГЛАВНОЕ ПРАВИЛО ФОКУСА:',
     '- Основной fokus ОБЯЗАН занимать 40–50% общего времени тренировки.',
     '',
@@ -183,7 +213,6 @@ function SYSTEM_PROMPT_SKELETON_() {
     'Вывод СТРОГО JSON. Без текста.'
   ].join('\n');
 }
-
 
 
 function USER_PROMPT_SKELETON_(ctx) {
@@ -258,7 +287,8 @@ function SYSTEM_PROMPT_EXPAND_() {
     '  - Игровая часть главная.',
     '  - Техника и физика ТОЛЬКО через игру.',
     '  - КАТА ЗАПРЕЩЕНА.',
-    '',    'ИСКЛЮЧЕНИЕ ДЛЯ ФИЗИЧЕСКОЙ ПОДГОТОВКИ:',
+    '',
+    'ИСКЛЮЧЕНИЕ ДЛЯ ФИЗИЧЕСКОЙ ПОДГОТОВКИ:',
     '- Если основной fokus = "physics":',
     '- В каждом подпункте физического блока',
     '  указывать 2–3 конкретных общефизических упражнения через запятую.',
@@ -276,9 +306,6 @@ function SYSTEM_PROMPT_EXPAND_() {
   ].join('\n');
 }
 
-
-
-
 function USER_PROMPT_EXPAND_(ctx, skeleton) {
   return [
     'Контекст:',
@@ -294,8 +321,7 @@ function USER_PROMPT_EXPAND_(ctx, skeleton) {
   ].join('\n');
 }
 
-/* ============== CYCLE / UTILS / PARSE ============== */
-/* --- БЕЗ ИЗМЕНЕНИЙ --- */
+/* ============== CYCLE ============== */
 
 function startCycle_(config) {
   const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
@@ -334,11 +360,40 @@ function parseTrainingText_(txt){
   return { title:'Тренировка', short_blocks:'', full_plan:String(txt||'').trim() };
 }
 
+/*============ STATISTICA ==========*/
+
+function saveStat_(event, extra) {
+  const ss = SpreadsheetApp.openById(STATS_SPREADSHEET_ID);
+  const sh = ss.getSheetByName(STATS_SHEET_NAME) || ss.insertSheet(STATS_SHEET_NAME);
+
+  if (sh.getLastRow() === 0) {
+    sh.appendRow(['date', 'event', 'count', 'last_ts', 'extra']);
+  }
+
+  const tz = Session.getScriptTimeZone() || 'GMT+5';
+  const now = new Date();
+  const day = Utilities.formatDate(now, tz, 'yyyy-MM-dd');
+
+  const data = sh.getDataRange().getValues();
+
+  for (let i = 1; i < data.length; i++) {
+    if (String(data[i][0]) === day && String(data[i][1]) === String(event)) {
+      const cur = Number(data[i][2]) || 0;
+      sh.getRange(i + 1, 3).setValue(cur + 1);
+      sh.getRange(i + 1, 4).setValue(now);
+      if (extra != null && extra !== '') sh.getRange(i + 1, 5).setValue(String(extra));
+      return;
+    }
+  }
+
+  sh.appendRow([day, String(event), 1, now, extra != null ? String(extra) : '']);
+}
+
 /* ============== HELPERS ============== */
 
 function num_(v){ const n=parseInt(v,10); return isNaN(n)?null:n; }
 function kyu_(v){ const n=parseInt(String(v).replace(/\D/g,''),10); return isNaN(n)?null:n; }
-function list_(v){ if(Array.isArray(v))return v; if(!v)return[]; return String(v).split(',').map(s=>s.trim()); }
+function list_(v){ if(Array.isArray(v))return v; if(!v)return[]; return String(v).split(',').map(s=>s.trim()).filter(Boolean); }
 function normalizeGoal_(g){ return String(g||'normal'); }
 function json_(o){ return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON); }
 
@@ -351,3 +406,43 @@ function safeJsonExtract_(raw){
 }
 
 
+
+/*==================*/
+function normalizeSkeletonTime_(skeleton, totalTime) {
+  if (!skeleton || !skeleton.structure || !Array.isArray(skeleton.structure.blocks)) {
+    return skeleton;
+  }
+
+  const blocks = skeleton.structure.blocks;
+
+  let sum = 0;
+  blocks.forEach(b => {
+    const t = Number(b.time_min);
+    if (Number.isFinite(t)) sum += t;
+  });
+
+  // если уже укладываемся — ничего не делаем
+  if (!sum || sum <= totalTime) {
+    return skeleton;
+  }
+
+  const k = totalTime / sum;
+
+  blocks.forEach(b => {
+    const t = Number(b.time_min);
+    if (!Number.isFinite(t)) return;
+
+    // масштабируем
+    let scaled = Math.round(t * k);
+
+    // округление к ближайшим 5 минутам
+    scaled = Math.round(scaled / 5) * 5;
+
+    // защита от нуля
+    if (scaled < 5) scaled = 5;
+
+    b.time_min = scaled;
+  });
+
+  return skeleton;
+}

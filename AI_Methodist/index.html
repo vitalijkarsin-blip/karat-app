@@ -12,6 +12,11 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+
+  <!-- Кнопка назад-->
+   <button id="back-btn" type="button" hidden>Назад</button>
+   <!-- конец-->
+
   <div class="page">
 
     <!-- ЭКРАН 1 -->
@@ -23,6 +28,7 @@
 
     <main class="card">
 
+      
       <form id="requestForm" class="form">
         <div class="field">
           <label>Возраст (диапазон)</label>
@@ -36,9 +42,9 @@
         <div class="field">
           <label>Кю (диапазон)</label>
           <div class="range-row">
-            <input type="text" class="input-short" name="kyu_from" placeholder="6 кю" required>
+            <input type="text" class="input-short" name="kyu_from" placeholder="11 кю" required>
             <span class="dash">—</span>
-            <input type="text" class="input-short" name="kyu_to" placeholder="4 кю">
+            <input type="text" class="input-short" name="kyu_to" placeholder="1 кю">
           </div>
         </div>
 
@@ -91,15 +97,40 @@
           </div>
         </fieldset>
 
-        
+        <!-- ОДНА СТРОКА: КОЛ-ВО ТРЕНИРОВОК + ДЛИТЕЛЬНОСТЬ -->
+         <div class="field">
+          <label>План тренировки
+            <br> <br>
+          </label>
 
-        <div class="field">
-          <label>Тренировок в неделю</label>
-          <select name="trainings_per_week">
-            <option value="2" selected>2</option>
-            <option value="3">3</option>
-            <option value="4">4</option>
-          </select>
+          <div class="range-row" style="gap:62px;">
+
+            <div class="field" style="gap:4px;">
+              <label >
+                Тренировок в неделю
+             </label>
+              <select name="trainings_per_week" class="input-short">
+                <option value="2" selected>2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+              </select>
+            </div>
+
+            <div class="field" style="gap:4px;">
+              <label >
+                Длительность (мин)
+              </label>
+              <input
+                type="number"
+                name="duration_minutes"
+                class="input-short"
+                value="90"
+                min="20"
+                step="5"
+              >
+            </div>
+
+          </div>
         </div>
 
         <div class="actions">
@@ -136,11 +167,56 @@
       <!-- DEBUG -->
       <pre id="output" class="debug-json hidden"></pre>
 
-      
-
     </main>
   </div>
 
   <script src="app.js"></script>
+
+<!--Скрипт обработки для кнопки назад-->
+
+
+<script>
+  (function () {
+    const EXPECTED = 'https://vitalijkarsin-blip.github.io/karat-app/KARAT_CRM/methodist.html';
+    const btn = document.getElementById('back-btn');
+    if (!btn) return;
+
+    const norm = (u) => {
+      try {
+        const url = new URL(u, location.href);
+        const p = url.pathname.replace(/\/$/, '');
+        return url.origin + p;
+      } catch (_) {
+        return '';
+      }
+    };
+
+    // Вариант 1: параметр в URL, например target.html?from=methodist
+    const params = new URLSearchParams(location.search);
+    const fromParam = params.get('from') === 'methodist';
+
+    // Вариант 2: пришли по referrer с нужной страницы
+    const ref = document.referrer || '';
+    const refMatch = ref && norm(ref) === norm(EXPECTED);
+
+    const shouldShow = fromParam || refMatch;
+
+    if (!shouldShow) return;
+
+    btn.hidden = false;
+
+    btn.addEventListener('click', () => {
+      // Если точно пришли с нужной страницы и есть куда "вернуться" — используем историю
+      if (refMatch && history.length > 1) {
+        history.back();
+      } else {
+        // Во всех остальных случаях — прямой переход на методиста
+        location.href = EXPECTED;
+      }
+    });
+  })();
+</script>
+<!---Конец скрипта для кнопки-->
+
 </body>
 </html>
