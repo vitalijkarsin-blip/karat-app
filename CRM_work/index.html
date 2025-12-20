@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="favicon.ico" type="image/x-icon">
+  <title>KARAT — Меню тренера</title>
+  <link rel="manifest" href="manifest.json">
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f6f6f6;
+      margin: 0;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .trainer-info {
+      font-size: 18px;
+      font-weight: bold;
+      margin-bottom: 5px;
+      color: #444;
+    }
+
+    h1 {
+      margin-bottom: 25px;
+      font-size: 28px;
+    }
+
+    .menu {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      max-width: 400px;
+      margin: 0 auto;
+    }
+
+    .btn {
+      padding: 15px;
+      background: #ffffff;
+      border-radius: 12px;
+      border: 2px solid #333;
+      font-size: 18px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: 0.2s;
+      text-decoration: none;
+      color: #000;
+    }
+
+    .btn:hover {
+      background: #eaeaea;
+    }
+  </style>
+</head>
+
+<body>
+
+<!-- ▣ вывод имени тренера -->
+<div id="trainerInfo" class="trainer-info"></div>
+
+<h1>Меню тренера</h1>
+
+<div class="menu">
+  <a class="btn" href="current.html">📘 Текущий месяц</a>
+  <a class="btn" href="previous.html">📙 Прошлый месяц</a>
+  <a class="btn" href="attendance.html">👥 Журнал посещаемости</a>
+
+  <a class="btn" href="salary.html">💰 Зарплата за месяц</a>
+
+  <a class="btn" href="forms.html">📝 Формы и отчёты</a>
+  <a class="btn" href="stock.html">📦 Наличие товара</a>
+  <a class="btn" href="kids.html">🧒 Список детей</a>
+  <a class="btn" href="results.html">🏆 Мониторинг</a>
+
+  <a class="btn" href="contact.html">❓ Связаться с администратором</a>
+
+  <a class="btn" href="exit.html">🚪 Выйти</a>
+</div>
+
+<script>
+  // Проверяем авторизацию
+  const trainerData = localStorage.getItem("trainer");
+  if (!trainerData) {
+      window.location.href = "login.html";
+  }
+
+  // Если авторизован → показываем ФИО
+  const trainer = JSON.parse(trainerData);
+
+  document.getElementById("trainerInfo").innerText =
+      "👤 Тренер: " + (trainer.name || "Без имени");
+
+  // SW для PWA
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js');
+  }
+</script>
+
+</body>
+</html>

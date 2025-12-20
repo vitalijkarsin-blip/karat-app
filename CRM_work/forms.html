@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="favicon.ico" type="image/x-icon">
+  <title>Формы и отчёты</title>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f6f6f6;
+      padding: 20px;
+    }
+
+    a.back {
+      display: inline-block;
+      margin-bottom: 20px;
+      color: #5a2ddb;
+      text-decoration: none;
+      font-size: 16px;
+    }
+
+    h2 {
+      margin-bottom: 25px;
+      text-align: left;
+    }
+
+    .menu {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .btn {
+      display: block;
+      max-width: 300px;
+      width: 90%;
+      margin: 0 auto;
+      padding: 15px;
+      border-radius: 12px;
+      border: 2px solid #333;
+      background: #fff;
+      font-size: 18px;
+      font-weight: bold;
+      text-align: center;
+      cursor: pointer;
+      transition: 0.2s;
+      text-decoration: none;
+      color: #000;
+    }
+
+    .btn:hover {
+      background: #eaeaea;
+    }
+  </style>
+</head>
+
+<body>
+
+<a href="index.html" class="back">← Назад в меню</a>
+
+<h2>Формы и отчёты</h2>
+
+<div class="menu">
+  <button class="btn" onclick="openForm('attendance')">Форма посещаемости</button>
+  <button class="btn" onclick="openForm('salary')">Форма оплаты</button>
+  <button class="btn" onclick="openForm('delete')">Удалить ученика</button>
+  <button class="btn" onclick="openForm('order')">Форма заказа товаров</button>
+</div>
+
+<script>
+const trainer = JSON.parse(localStorage.getItem("trainer"));
+
+if (!trainer || trainer.role !== "coach") {
+  window.location.href = "login.html";
+}
+
+// сопоставление ключ → ссылка из trainer
+const FORMS = {
+  attendance: trainer.form_attendance,
+  salary:     trainer.form_salary,
+  delete:     trainer.form_delete,
+  order:      trainer.form_order
+};
+
+function openForm(key) {
+  const url = FORMS[key];
+
+  if (!url) {
+    alert("Ссылка на форму не найдена.");
+    console.warn("Нет ссылки для:", key, trainer);
+    return;
+  }
+
+  window.location.href =
+    "form_wrapper.html?url=" + encodeURIComponent(url);
+}
+</script>
+
+</body>
+</html>

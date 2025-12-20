@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="favicon.ico" type="image/x-icon">
+  <title>Формы</title>
+
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+      background: #f6f6f6;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+
+    .back {
+      padding: 15px;
+      font-size: 18px;
+      font-weight: bold;
+      cursor: pointer;
+      background: #fff;
+      border-bottom: 2px solid #ddd;
+    }
+
+    iframe {
+      flex: 1;
+      width: 100%;
+      border: none;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="back" onclick="location.href='index.html'">⬅ В главное меню</div>
+  <div class="back" onclick="location.href='forms.html'">⬅ Назад</div>
+
+<iframe id="formFrame"></iframe>
+
+<script>
+  // 🔐 проверка тренера
+  const trainer = JSON.parse(localStorage.getItem("trainer"));
+  if (!trainer || trainer.role !== "coach") {
+    window.location.href = "login.html";
+  }
+
+  // URL формы передаём через параметр ?url=...
+  const params = new URLSearchParams(window.location.search);
+  const url = params.get("url");
+
+  if (!url) {
+    document.body.innerHTML = "<h2 style='padding:20px;'>Ошибка: ссылка не передана.</h2>";
+  } else {
+    document.getElementById("formFrame").src = url;
+  }
+</script>
+
+</body>
+</html>

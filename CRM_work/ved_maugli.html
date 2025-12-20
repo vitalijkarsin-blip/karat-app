@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="favicon.ico" type="image/x-icon">
+  <title>Маугли — Ведомости</title>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background: #f6f6f6;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      box-sizing: border-box;
+    }
+
+    .back {
+      text-align: left;
+      font-size: 18px;
+      margin-bottom: 10px;
+      cursor: pointer;
+      font-weight: bold;
+      color: #333;
+    }
+
+    h1 {
+      margin: 0 0 15px 0;
+    }
+
+    #frame {
+      flex: 1;
+      width: 100%;
+      border: none;
+      display: none;
+    }
+
+    .loading {
+      font-size: 18px;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="back" onclick="location.href='admin_menu.html'">⬅ В главное меню</div>
+<div class="back" onclick="location.href='admin_vedomosti.html'">⬅ Назад</div>
+
+  
+<h1>Маугли — Ведомости</h1>
+
+<div id="loading" class="loading">Загрузка таблицы…</div>
+<iframe id="frame"></iframe>
+
+
+<script>
+const API_URL = "https://script.google.com/macros/s/AKfycbydYQAoOMHlIAEZIsSUu3sNALYsltItXaBrc6qYHkUdmRvbfgIAutkhgV1Yowpw46WmFg/exec";
+const ADMIN_ID = "maugliVedom";
+
+const frame   = document.getElementById("frame");
+const loading = document.getElementById("loading");
+
+// Загружаем AdminTables
+fetch(API_URL + "?admintables=1")
+  .then(r => r.json())
+  .then(data => {
+    const tables = data.tables || [];
+    const row = tables.find(t => t.id === ADMIN_ID);
+
+    if (!row) {
+      loading.textContent = "Ссылка не найдена.";
+      return;
+    }
+
+    let url = row.url;
+
+    // Нормализуем ссылку: edit + корректный gid
+    // Убираем #gid= и заменяем на ?gid= (iframe любит такой вариант)
+    url = url.replace("#gid=", "?gid=");
+
+    console.log("Открываем ссылку:", url);
+
+    frame.src = url;
+
+    frame.onload = () => {
+      loading.style.display = "none";
+      frame.style.display = "block";
+    };
+  })
+  .catch(err => {
+    console.error(err);
+    loading.textContent = "Ошибка загрузки.";
+  });
+</script>
+
+
+
+</body>
+</html>
