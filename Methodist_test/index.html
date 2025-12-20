@@ -177,41 +177,95 @@
 
 <script>
   (function () {
-    const EXPECTED = 'https://vitalijkarsin-blip.github.io/karat-app/KARAT_CRM/methodist.html';
-    const btn = document.getElementById('back-btn');
-    if (!btn) return;
+    // Настройки
+    const BASE_ORIGIN = 'https://vitalijkarsin-blip.github.io';
+    const BASE_PATH = '/karat-app/KARAT_CRM/'; // каталог, из которого разрешаем возврат
+    const ALLOW_ALL_UNDER_BASE = true; // поставьте false, если хотите использовать только список ALLOWED
 
+    const ALLOWED = [
+      BASE_ORIGIN + BASE_PATH + 'methodist.html',
+      BASE_ORIGIN + BASE_PATH + 'admin_methodist.html',
+    ];
+
+    // Хелперы
     const norm = (u) => {
       try {
         const url = new URL(u, location.href);
-        const p = url.pathname.replace(/\/$/, '');
-        return url.origin + p;
-      } catch (_) {
-        return '';
-      }
+        // нормализуем без завершающего слэша в pathname
+        const pathname = url.pathname.replace(/\/$/, '');
+        return url.origin + pathname;
+      } catch (_) { return ''; }
     };
 
-    // Вариант 1: параметр в URL, например target.html?from=methodist
-    const params = new URLSearchParams(location.search);
-    const fromParam = params.get('from') === 'methodist';
+    const isUnderBase = (u) => {
+      try {
+        const url = new URL(u, location.href);
+        // учитываем, что BASE_PATH заканчивается на '/'
+        return url.origin === BASE_ORIGIN && url.pathname.startsWith(BASE_PATH);
+      } catch (_) { return false; }
+    };
 
-    // Вариант 2: пришли по referrer с нужной страницы
+    const isAllowedReferrer = (ref) => {
+      if (!ref) return false;
+      if (ALLOW_ALL_UNDER_BASE) return isUnderBase(ref);
+      const nref = norm(ref);
+      return ALLOWED.some(a => norm(a) === nref);
+    };
+
+    const btn = document.getElementById('back-btn');
+    if (!btn) return;
+
+    let show = false;
+    let backTarget = null;
+
+    // 1) Пытаемся использовать referrer
     const ref = document.referrer || '';
-    const refMatch = ref && norm(ref) === norm(EXPECTED);
+    if (isAllowedReferrer(ref)) {
+      show = true;
+      backTarget = ref;
+    }
 
-    const shouldShow = fromParam || refMatch;
+    // 2) Параметры URL
+    const params = new URLSearchParams(location.search);
 
-    if (!shouldShow) return;
+    // 2a) from=methodist | from=admin_methodist
+    if (!show) {
+      const from = params.get('from');
+      const map = {
+        methodist: BASE_ORIGIN + BASE_PATH + 'methodist.html',
+        admin_methodist: BASE_ORIGIN + BASE_PATH + 'admin_methodist.html',
+      };
+      if (from && map[from]) {
+        show = true;
+        backTarget = map[from];
+      }
+    }
+
+    // 2b) back=<полный URL> — принимаем только тот же origin и внутри каталога
+    if (!show) {
+      const back = params.get('back');
+      if (back) {
+        try {
+          const b = new URL(back, location.href);
+          if (b.origin === BASE_ORIGIN && b.pathname.startsWith(BASE_PATH)) {
+            show = true;
+            backTarget = b.href;
+          }
+        } catch (_) { /* игнор */ }
+      }
+    }
+
+    if (!show || !backTarget) return;
 
     btn.hidden = false;
 
     btn.addEventListener('click', () => {
-      // Если точно пришли с нужной страницы и есть куда "вернуться" — используем историю
-      if (refMatch && history.length > 1) {
+      // Если реально пришли с той же страницы и есть история — вернемся назад
+      if (ref && backTarget && norm(ref) === norm(backTarget) && history.length > 1) {
         history.back();
       } else {
-        // Во всех остальных случаях — прямой переход на методиста
-        location.href = EXPECTED;
+        // Иначе — прямой переход на рассчитанную страницу
+        location.href = backTarget;
       }
     });
   })();
