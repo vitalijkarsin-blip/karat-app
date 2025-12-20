@@ -17,18 +17,27 @@ const output = document.getElementById('output');
 
 /* ===== BUTTON LOADER ===== */
 const submitBtn = document.getElementById('submitBtn');
-const btnText = submitBtn.querySelector('.btn-text');
-const btnLoader = submitBtn.querySelector('.btn-loader');
+const btnText = submitBtn ? submitBtn.querySelector('.btn-text') : null;
+const btnLoader = submitBtn ? submitBtn.querySelector('.btn-loader') : null;
+
 
 function setLoading(state) {
-  btnLoader.hidden = !state;
-  submitBtn.disabled = state;
-  btnText.textContent = state ? 'Думаю…' : 'Сформировать запрос';
+  if (btnLoader) btnLoader.hidden = !state;
+if (submitBtn) submitBtn.disabled = state;
+if (btnText) btnText.textContent = state ? 'Думаю…' : 'Сформировать запрос';
+
 }
 
 /* === GAS API === */
 const API_URL =
   'https://script.google.com/macros/s/AKfycbzgoa-9hjklCxdhS8WAJRNwqOFiU3Pqno8q0yvZ1WbELmBEL9uLqP7P967MEmDhy2Ii/exec';
+
+
+/*====== statistica jpen======= */
+fetch(API_URL + '?action=stat&event=open_app').catch(()=>{});
+
+
+
 
 /* ===== state ===== */
 let currentSessionId = null;
@@ -77,8 +86,28 @@ function buildPayload() {
   let kyu_from = parseKyu(fd.get('kyu_from'));
   let kyu_to   = parseKyu(fd.get('kyu_to'));
 
+  // === НОРМАЛИЗАЦИЯ ВОЗРАСТА ===
+  if (age_from !== null && age_from < 3) age_from = 3;
+  if (age_to   !== null && age_to   < 3) age_to   = 3;
+
+  // если указан только один возраст
   if (age_from !== null && age_to === null) age_to = age_from;
+
+  // === НОРМАЛИЗАЦИЯ КЮ (1–11) ===
+  if (kyu_from !== null) {
+    if (kyu_from < 1) kyu_from = 1;
+    if (kyu_from > 11) kyu_from = 11;
+  }
+
+  if (kyu_to !== null) {
+    if (kyu_to < 1) kyu_to = 1;
+    if (kyu_to > 11) kyu_to = 11;
+  }
+
+  // если указан только один кю
   if (kyu_from !== null && kyu_to === null) kyu_to = kyu_from;
+
+  const duration_minutes = numOrNull(fd.get('duration_minutes'));
 
   const payload = {
     mode,
@@ -87,7 +116,8 @@ function buildPayload() {
     kyu_from,
     kyu_to,
     goal: fd.get('goal') === 'training' ? 'normal' : fd.get('goal'),
-    focus
+    focus,
+    duration_minutes
   };
 
   if (mode === 'cycle') {
@@ -97,6 +127,7 @@ function buildPayload() {
 
   return payload;
 }
+
 
 /* ===== API ===== */
 
@@ -142,6 +173,9 @@ function renderTraining(training) {
 /* ===== submit ===== */
 
 form.addEventListener('submit', async (e) => {
+    /*==========statistica knopki ===========*/
+    fetch(API_URL + '?action=stat&event=generate_click').catch(()=>{});
+    /*end   */
   e.preventDefault();
 
   const payload = buildPayload();
