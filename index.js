@@ -12,7 +12,7 @@ if (!BOT_TOKEN || !GAS_API_URL) {
 
 const bot = new Telegraf(BOT_TOKEN);
 
-/* ===== SESSION ===== */
+/* ================= SESSION ================= */
 const sessions = new Map();
 
 function resetSession(uid) {
@@ -31,7 +31,7 @@ function getSession(uid) {
   return sessions.get(uid);
 }
 
-/* ===== UI ===== */
+/* ================= UI ================= */
 const base = [
   ['ℹ️ Помощь', '🔁 Начать заново']
 ];
@@ -69,7 +69,7 @@ const nextMenu = () =>
     ...base
   ]).resize();
 
-/* ===== HELPERS ===== */
+/* ================= HELPERS ================= */
 function clean(obj) {
   const out = {};
   for (const [k, v] of Object.entries(obj)) {
@@ -91,12 +91,12 @@ async function callGAS(params) {
   return res.data;
 }
 
-/* fire-and-forget статистика */
+/* ===== статистика (fire-and-forget) ===== */
 function stat(event, extra = {}) {
   axios.get(GAS_API_URL, {
     params: {
       action: 'stat',
-      event,
+      event,              // ВАЖНО: совпадает с сайтом
       source: 'telegram',
       ...extra
     }
@@ -135,29 +135,29 @@ function summary(s) {
   );
 }
 
-/* ===== START / RESET ===== */
+/* ================= START / RESET ================= */
 function startFlow(ctx) {
   resetSession(ctx.from.id);
-  stat('open_app');
+  stat('open_app'); // ← запуск бота
   ctx.reply('🥋 AI-Методист\nВыбери формат:', mainMenu());
 }
 
 bot.start(startFlow);
 bot.hears('🔁 Начать заново', startFlow);
 
-/* ===== HELP ===== */
+/* ================= HELP ================= */
 bot.hears('ℹ️ Помощь', ctx => {
   const s = getSession(ctx.from.id);
   ctx.reply(
     'ℹ️ Помощь\n\n' +
     'Заполняй параметры по шагам.\n' +
-    'Перед генерацией ты увидишь сводку и сможешь изменить данные.\n\n' +
+    'Перед генерацией ты увидишь сводку.\n\n' +
     'Если что-то пошло не так — нажми «Начать заново».',
     s.step === 'cycle_active' ? nextMenu() : mainMenu()
   );
 });
 
-/* ===== NEXT ===== */
+/* ================= NEXT ================= */
 bot.hears('▶️ Следующая тренировка', async ctx => {
   const s = getSession(ctx.from.id);
   if (s.step !== 'cycle_active' || !s.session_id) return;
@@ -179,7 +179,7 @@ bot.hears('▶️ Следующая тренировка', async ctx => {
   return ctx.reply(renderTraining(data.training), nextMenu());
 });
 
-/* ===== TEXT FLOW ===== */
+/* ================= TEXT FLOW ================= */
 bot.on('text', async ctx => {
   const text = ctx.message.text;
   const s = getSession(ctx.from.id);
@@ -266,7 +266,7 @@ bot.on('text', async ctx => {
       if (s.mode === 'single') {
         await ctx.reply('⏳ Формирую тренировку…');
         const data = await callGAS({ ...s.payload, mode: 'single' });
-        stat('generate_training', { mode: 'single' });
+        stat('generate_click', { mode: 'single' }); // ← генерация
         s.step = 'done';
         return ctx.reply(renderTraining(data.training), mainMenu());
       }
@@ -274,7 +274,7 @@ bot.on('text', async ctx => {
       if (s.mode === 'cycle') {
         await ctx.reply('⏳ Формирую цикл…');
         const data = await callGAS({ ...s.payload, mode: 'cycle' });
-        stat('generate_training', { mode: 'cycle' });
+        stat('generate_click', { mode: 'cycle' }); // ← генерация
 
         s.session_id = data.session_id;
         s.cycleTotal = s.payload.weeks * s.payload.trainings_per_week;
@@ -295,7 +295,7 @@ bot.on('text', async ctx => {
   }
 });
 
-/* ===== LAUNCH ===== */
+/* ================= LAUNCH ================= */
 bot.launch({ dropPendingUpdates: true });
 process.once('SIGINT', () => bot.stop());
 process.once('SIGTERM', () => bot.stop());
