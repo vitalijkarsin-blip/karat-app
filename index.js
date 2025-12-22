@@ -112,6 +112,29 @@ function stat(ctx, event) {
   }).catch(() => {});
 }
 
+/* ================= LABELS (UI ONLY) ================= */
+const GOAL_LABELS = {
+  normal: 'Обычная тренировка',
+  tournament: 'Подготовка к турниру',
+  exam: 'Подготовка к аттестации'
+};
+
+const FOCUS_LABELS = {
+  physics: 'ОФП',
+  technique: 'Техника',
+  kata: 'Ката',
+  kumite: 'Кумитэ'
+};
+
+function goalText(code) {
+  return GOAL_LABELS[code] || code || 'не задана';
+}
+
+function focusText(arr) {
+  if (!arr || arr.length === 0) return 'не заданы';
+  return arr.map(f => FOCUS_LABELS[f] || f).join(', ');
+}
+
 function renderTraining(training) {
   if (!training) return 'Тренировка сформирована.';
   if (training.short_blocks) {
@@ -121,11 +144,6 @@ function renderTraining(training) {
       .join('\n');
   }
   return training.full_plan || 'Тренировка сформирована.';
-}
-
-function focusText(arr) {
-  if (!arr || arr.length === 0) return 'не задан';
-  return arr.join(', ');
 }
 
 function summary(s) {
@@ -138,7 +156,7 @@ function summary(s) {
       : '') +
     `Возраст: ${p.age_from}-${p.age_to}\n` +
     `Кю: ${p.kyu_from}-${p.kyu_to}\n` +
-    `Цель: ${p.goal}\n` +
+    `Цель: ${goalText(p.goal)}\n` +
     `Приоритеты: ${focusText(p.focus)}\n` +
     `Длительность: ${p.duration_minutes} мин`
   );
