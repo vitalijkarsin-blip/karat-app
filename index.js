@@ -33,7 +33,6 @@ function getSession(uid) {
 
 /* ===== UI ===== */
 const base = [
-  ['🚀 Start'],
   ['ℹ️ Помощь', '🔁 Начать заново']
 ];
 
@@ -124,21 +123,24 @@ function summary(s) {
   );
 }
 
-/* ===== START ===== */
+/* ===== START / RESET ===== */
 function startFlow(ctx) {
   resetSession(ctx.from.id);
   ctx.reply('🥋 AI-Методист\nВыбери формат:', mainMenu());
 }
 
 bot.start(startFlow);
-bot.hears('🚀 Start', startFlow);
 bot.hears('🔁 Начать заново', startFlow);
 
 /* ===== HELP ===== */
 bot.hears('ℹ️ Помощь', ctx => {
+  const s = getSession(ctx.from.id);
   ctx.reply(
-    'ℹ️ Помощь\n\nЗаполняй параметры по шагам.\nПеред генерацией будет показана сводка.',
-    mainMenu()
+    'ℹ️ Помощь\n\n' +
+    'Заполняй параметры по шагам.\n' +
+    'Перед генерацией ты увидишь сводку и сможешь изменить данные.\n\n' +
+    'Если что-то пошло не так — нажми «Начать заново».',
+    s.step === 'cycle_active' ? nextMenu() : mainMenu()
   );
 });
 
@@ -218,7 +220,7 @@ bot.on('text', async ctx => {
     if (text.includes('турниру')) s.payload.goal = 'tournament';
     if (text.includes('аттестации')) s.payload.goal = 'exam';
     s.step = 'focus';
-    return ctx.reply('Приоритеты (можно несколько):', focusMenu());
+    return ctx.reply('Приоритеты:', focusMenu());
   }
 
   if (s.step === 'focus') {
