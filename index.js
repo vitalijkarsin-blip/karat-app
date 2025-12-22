@@ -12,7 +12,7 @@ const bot = new Telegraf(BOT_TOKEN);
 /* ===== SESSION ===== */
 const sessions = new Map();
 function resetSession(userId) {
-  sessions.set(userId, { mode: null, step: null, payload: {} });
+  sessions.set(userId, { mode: null, step: null, payload: {} , focusSet: new Set()});
 }
 function getSession(userId) {
   if (!sessions.has(userId)) resetSession(userId);
@@ -32,6 +32,13 @@ function goalMenu() {
     ['Подготовка к турниру'],
     ['Подготовка к экзамену'],
     ['🔁 Начать заново']
+  ]).resize();
+}
+function focusMenu() {
+  return Markup.keyboard([
+    ['🥊 Кумите', '🏋️ Физика'],
+    ['🎯 Техника', '🧘 Ката'],
+    ['✅ Готово', '🔁 Начать заново']
   ]).resize();
 }
 
@@ -57,10 +64,9 @@ bot.on('text', async (ctx, next) => {
   s.mode = 'single';
   s.step = 'age';
   s.payload = {};
+  s.focusSet = new Set();
 
-  await ctx.reply(
-    'Укажи возраст:\n• 10\n• или 10-11'
-  );
+  await ctx.reply('Укажи возраст:\n• 10\n• или 10-11');
 });
 
 /* ===== AGE ===== */
@@ -91,9 +97,7 @@ bot.on('text', async (ctx, next) => {
   s.payload.age_to = to;
   s.step = 'kyu';
 
-  await ctx.reply(
-    'Укажи кю:\n• 8\n• или 8-7'
-  );
+  await ctx.reply('Укажи кю:\n• 8\n• или 8-7');
 });
 
 /* ===== KYU ===== */
@@ -126,19 +130,15 @@ bot.on('text', async (ctx, next) => {
   s.payload.kyu_to = to;
   s.step = 'goal';
 
-  await ctx.reply(
-    'Выбери цель тренировки:',
-    goalMenu()
-  );
+  await ctx.reply('Выбери цель тренировки:', goalMenu());
 });
 
 /* ===== GOAL ===== */
-bot.on('text', async (ctx) => {
+bot.on('text', async (ctx, next) => {
   const s = getSession(ctx.from.id);
-  if (s.mode !== 'single' || s.step !== 'goal') return;
+  if (s.mode !== 'single' || s.step !== 'goal') return next();
 
   const text = ctx.message.text;
-
   let goal = null;
   if (text === 'Обычная тренировка') goal = 'normal';
   if (text === 'Подготовка к турниру') goal = 'tournament';
@@ -150,15 +150,60 @@ bot.on('text', async (ctx) => {
   }
 
   s.payload.goal = goal;
-  s.step = 'done_goal';
+  s.step = 'focus';
 
   await ctx.reply(
-    `✅ Принято:\n` +
-    `Возраст: ${s.payload.age_from}-${s.payload.age_to}\n` +
-    `Кю: ${s.payload.kyu_from}-${s.payload.kyu_to}\n` +
-    `Цель: ${goal}\n\n` +
-    `Дальше добавим фокус.`
+    'Выбери фокус (можно несколько). Нажимай кнопки, затем «Готово».',
+    focusMenu()
   );
+});
+
+/* ===== FOCUS (MULTI) ===== */
+bot.on('text', async (ctx) => {
+  const s = getSession(ctx.from.id);
+  if (s.mode !== 'single' || s.step !== 'focus') return;
+
+  const text = ctx.message.text;
+
+  const map = {
+    '🥊 Кумите': 'kumite',
+    '🏋️ Физика': 'physics',
+    '🎯 Техника': 'technique',
+    '🧘 Ката': 'kata'
+  };
+
+  if (map[text]) {
+    s.focusSet.add(map[text]);
+    await ctx.reply(`Добавлено: ${map[text]}`);
+    return;
+  }
+
+  if (text === '✅ Готово') {
+    if (s.focusSet.size === 0) {
+      await ctx.reply('❌ Выбери хотя бы один фокус.');
+      return;
+    }
+    s.payload.focus = Array.from(s.focusSet);
+    s.step = 'done_focus';
+
+    await ctx.reply(
+      `✅ Принято:\n` +
+      `Возраст: ${s.payload.age_from}-${s.payload.age_to}\n` +
+      `Кю: ${s.payload.kyu_from}-${s.payload.kyu_to}\n` +
+      `Цель: ${s.payload.goal}\n` +
+      `Фокус: ${s.payload.focus.join(', ')}\n\n` +
+      `Дальше добавим длительность.`
+    );
+    return;
+  }
+
+  if (text === '🔁 Начать заново') {
+    resetSession(ctx.from.id);
+    await ctx.reply('Начинаем заново. Выбери режим:', mainMenu());
+    return;
+  }
+
+  await ctx.reply('Выбирай фокус кнопками или нажми «Готово».');
 });
 
 /* ===== LAUNCH ===== */
