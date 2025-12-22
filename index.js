@@ -4,6 +4,7 @@ const axios = require('axios');
 
 const BOT_TOKEN = process.env.BOT_TOKEN;
 const GAS_API_URL = process.env.GAS_API_URL;
+
 if (!BOT_TOKEN || !GAS_API_URL) {
   console.error('ENV missing');
   process.exit(1);
@@ -50,17 +51,34 @@ const nextMenu = () => Markup.keyboard([
 ]).resize();
 
 /* ===== HELPERS ===== */
-const clean = o => {
-  const r={}; for(const[k,v] of Object.entries(o)){
-    if(v===null||v===undefined||v==='') continue; r[k]=v;
-  } return r;
-};
-const callGAS = async params =>
-  (await axios.get(GAS_API_URL,{params:clean(params),timeout:45000})).data;
-
-const fmtShort = s =>
-  s ? String(s).split('→').map(p=>`• ${p.trim()}`).join('\n')
-    : 'Тренировка сформирована.';
+function clean(obj){
+  const out={};
+  for(const[k,v] of Object.entries(obj)){
+    if(v===null||v===undefined||v==='') continue;
+    out[k]=v;
+  }
+  return out;
+}
+async function callGAS(params){
+  const res = await axios.get(GAS_API_URL,{
+    params: clean(params),
+    timeout: 45000
+  });
+  return res.data;
+}
+function renderTrainingText(training){
+  if(!training) return 'Тренировка сформирована.';
+  if(training.short_blocks){
+    return String(training.short_blocks)
+      .split('→')
+      .map(p=>`• ${p.trim()}`)
+      .join('\n');
+  }
+  if(training.full_plan){
+    return training.full_plan;
+  }
+  return 'Тренировка сформирована.';
+}
 
 /* ===== START / RESET ===== */
 bot.start(async ctx=>{
@@ -72,7 +90,7 @@ bot.hears('🔁 Начать заново', async ctx=>{
   await ctx.reply('Начинаем заново:', mainMenu());
 });
 
-/* ===== MODE ===== */
+/* ===== MODE SELECT ===== */
 bot.on('text', async (ctx,next)=>{
   const t = ctx.message.text;
   const s = getSession(ctx.from.id);
@@ -109,7 +127,7 @@ bot.on('text', async (ctx,next)=>{
   return ctx.reply('Укажи возраст:\n• 10\n• или 10-11');
 });
 
-/* ===== AGE (ОБЩИЙ ДЛЯ SINGLE И CYCLE) ===== */
+/* ===== AGE ===== */
 bot.on('text', async (ctx,next)=>{
   const s=getSession(ctx.from.id);
   if(!['single','cycle'].includes(s.mode)||s.step!=='age') return next();
@@ -185,7 +203,7 @@ bot.on('text', async (ctx)=>{
     const data=await callGAS(s.payload);
     if(data.status!=='ok') return ctx.reply('❌ Ошибка API');
     await ctx.reply(`🏷 ${data.training?.title||'Тренировка'}`);
-    await ctx.reply(fmtShort(data.training?.short_blocks));
+    await ctx.reply(renderTrainingText(data.training));
     s.step='done';
     return;
   }
@@ -203,7 +221,7 @@ bot.on('text', async (ctx)=>{
   if(first.status==='ok'&&first.training){
     s.cycleIndex=1;
     await ctx.reply(`🏷 Тренировка ${s.cycleIndex} из ${s.cycleTotal}`);
-    await ctx.reply(fmtShort(first.training.short_blocks), nextMenu());
+    await ctx.reply(renderTrainingText(first.training), nextMenu());
   }
 });
 
@@ -216,7 +234,7 @@ bot.hears('▶️ Следующая тренировка', async ctx=>{
   if(data.status==='ok'&&data.training){
     s.cycleIndex++;
     await ctx.reply(`🏷 Тренировка ${s.cycleIndex} из ${s.cycleTotal}`);
-    await ctx.reply(fmtShort(data.training.short_blocks), nextMenu());
+    await ctx.reply(renderTrainingText(data.training), nextMenu());
   }
 });
 
