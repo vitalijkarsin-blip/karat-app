@@ -65,7 +65,11 @@ bot.hears('ℹ️ Помощь', async (ctx) => {
 });
 
 // ====== ONE TRAINING: STEP 1 (AGE) ======
-bot.hears('🟦 Одна тренировка', async (ctx) => {
+bot.on('text', async (ctx) => {
+  const text = ctx.message.text;
+
+  if (!text.includes('Одна тренировка')) return;
+
   const session = getSession(ctx.from.id);
 
   session.mode = 'single';
@@ -78,6 +82,7 @@ bot.hears('🟦 Одна тренировка', async (ctx) => {
     '• или диапазон (например: 10-11)'
   );
 });
+
 
 // ====== AGE INPUT ======
 bot.on('text', async (ctx) => {
