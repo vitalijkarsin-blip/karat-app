@@ -93,8 +93,8 @@ bot.on('text', async (ctx) => {
   const text = ctx.message.text.trim();
 
   // допустимые форматы: 10 или 10-11
-  const singleAge = /^\\d{1,2}$/;
-  const rangeAge = /^\\d{1,2}\\s*-\\s*\\d{1,2}$/;
+  const singleAge = /^\d{1,2}$/;
+  const rangeAge = /^\d{1,2}\s*-\s*\d{1,2}$/;
 
   if (!singleAge.test(text) && !rangeAge.test(text)) {
     await ctx.reply(
