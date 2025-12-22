@@ -18,7 +18,7 @@ const sessions = new Map();
 function resetSession(uid) {
   sessions.set(uid, {
     mode: null,
-    step: 'mode', // mode | weeks | tpw | age | kyu | goal | focus | duration | confirm | cycle_active | done
+    step: 'mode',
     payload: { focus: [] },
     session_id: null,
     cycleIndex: 0,
@@ -91,6 +91,18 @@ async function callGAS(params) {
   return res.data;
 }
 
+/* fire-and-forget статистика */
+function stat(event, extra = {}) {
+  axios.get(GAS_API_URL, {
+    params: {
+      action: 'stat',
+      event,
+      source: 'telegram',
+      ...extra
+    }
+  }).catch(() => {});
+}
+
 function renderTraining(training) {
   if (!training) return 'Тренировка сформирована.';
   if (training.short_blocks) {
@@ -126,6 +138,7 @@ function summary(s) {
 /* ===== START / RESET ===== */
 function startFlow(ctx) {
   resetSession(ctx.from.id);
+  stat('open_app');
   ctx.reply('🥋 AI-Методист\nВыбери формат:', mainMenu());
 }
 
@@ -253,6 +266,7 @@ bot.on('text', async ctx => {
       if (s.mode === 'single') {
         await ctx.reply('⏳ Формирую тренировку…');
         const data = await callGAS({ ...s.payload, mode: 'single' });
+        stat('generate_training', { mode: 'single' });
         s.step = 'done';
         return ctx.reply(renderTraining(data.training), mainMenu());
       }
@@ -260,6 +274,7 @@ bot.on('text', async ctx => {
       if (s.mode === 'cycle') {
         await ctx.reply('⏳ Формирую цикл…');
         const data = await callGAS({ ...s.payload, mode: 'cycle' });
+        stat('generate_training', { mode: 'cycle' });
 
         s.session_id = data.session_id;
         s.cycleTotal = s.payload.weeks * s.payload.trainings_per_week;
