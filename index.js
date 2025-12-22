@@ -48,7 +48,7 @@ const focusMenu = () =>
   Markup.keyboard([
     ['⚡ Физика', '🥋 Техника'],
     ['🧘 Ката', '🤼 Кумите'],
-    ['➡️ Пропустить']
+    ['✅ Принять', '➡️ Пропустить']
   ]).resize();
 
 const nextMenu = () =>
@@ -215,12 +215,12 @@ bot.on('text', async ctx => {
     if (text.includes('турниру')) s.payload.goal = 'tournament';
     if (text.includes('аттестации')) s.payload.goal = 'exam';
     s.step = 'focus';
-    return ctx.reply('Выбери приоритеты (можно пропустить):', focusMenu());
+    return ctx.reply('Выбери приоритеты (можно несколько):', focusMenu());
   }
 
   /* === FOCUS === */
   if (s.step === 'focus') {
-    if (text === '➡️ Пропустить') {
+    if (text === '➡️ Пропустить' || text === '✅ Принять') {
       s.step = 'duration';
       return ctx.reply('Укажи длительность тренировки (в минутах):');
     }
@@ -230,7 +230,7 @@ bot.on('text', async ctx => {
     if (text.includes('Ката')) s.payload.focus.push('kata');
     if (text.includes('Кумите')) s.payload.focus.push('kumite');
 
-    return ctx.reply('Можно выбрать ещё или нажми «Пропустить»', focusMenu());
+    return ctx.reply('Можно выбрать ещё или нажми «Принять»', focusMenu());
   }
 
   /* === DURATION === */
@@ -251,7 +251,6 @@ bot.on('text', async ctx => {
 
     s.payload.duration_minutes = n;
 
-    /* SINGLE */
     if (s.mode === 'single') {
       await ctx.reply('⏳ Формирую тренировку…');
       const data = await callGAS({ ...s.payload, mode: 'single' });
@@ -259,7 +258,6 @@ bot.on('text', async ctx => {
       return ctx.reply(renderTraining(data.training), mainMenu());
     }
 
-    /* CYCLE */
     if (s.mode === 'cycle') {
       await ctx.reply('⏳ Формирую цикл…');
       const data = await callGAS({ ...s.payload, mode: 'cycle' });
