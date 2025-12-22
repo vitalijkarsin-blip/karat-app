@@ -1,9 +1,12 @@
 require('dotenv').config();
 const { Telegraf, Markup } = require('telegraf');
+const axios = require('axios');
 
 const BOT_TOKEN = process.env.BOT_TOKEN;
-if (!BOT_TOKEN) {
-  console.error('BOT_TOKEN missing');
+const GAS_API_URL = process.env.GAS_API_URL;
+
+if (!BOT_TOKEN || !GAS_API_URL) {
+  console.error('ENV missing');
   process.exit(1);
 }
 
@@ -12,7 +15,7 @@ const bot = new Telegraf(BOT_TOKEN);
 /* ===== SESSION ===== */
 const sessions = new Map();
 function resetSession(userId) {
-  sessions.set(userId, { mode: null, step: null, payload: {} , focusSet: new Set()});
+  sessions.set(userId, { mode: null, step: null, payload: {}, focusSet: new Set() });
 }
 function getSession(userId) {
   if (!sessions.has(userId)) resetSession(userId);
@@ -52,20 +55,17 @@ bot.hears('🔁 Начать заново', async (ctx) => {
   await ctx.reply('Начинаем заново. Выбери режим:', mainMenu());
 });
 bot.hears('ℹ️ Помощь', async (ctx) => {
-  await ctx.reply('Следуй шагам. Можно в любой момент начать заново.');
+  await ctx.reply('Следуй шагам. Можно начать заново.');
 });
 
 /* ===== MODE: SINGLE ===== */
 bot.on('text', async (ctx, next) => {
-  const text = ctx.message.text;
-  if (!text.includes('Одна тренировка')) return next();
-
+  if (!ctx.message.text.includes('Одна тренировка')) return next();
   const s = getSession(ctx.from.id);
   s.mode = 'single';
   s.step = 'age';
   s.payload = {};
   s.focusSet = new Set();
-
   await ctx.reply('Укажи возраст:\n• 10\n• или 10-11');
 });
 
@@ -73,30 +73,18 @@ bot.on('text', async (ctx, next) => {
 bot.on('text', async (ctx, next) => {
   const s = getSession(ctx.from.id);
   if (s.mode !== 'single' || s.step !== 'age') return next();
-
-  const text = ctx.message.text.trim();
+  const t = ctx.message.text.trim();
   const single = /^\d{1,2}$/;
   const range = /^\d{1,2}\s*-\s*\d{1,2}$/;
-
-  if (!single.test(text) && !range.test(text)) {
-    await ctx.reply('❌ Формат: 10 или 10-11');
-    return;
-  }
-
+  if (!single.test(t) && !range.test(t)) return ctx.reply('❌ Формат: 10 или 10-11');
   let from, to;
-  if (single.test(text)) {
-    from = to = parseInt(text, 10);
-  } else {
-    [from, to] = text.split('-').map(v => parseInt(v.trim(), 10));
-  }
-
+  if (single.test(t)) from = to = parseInt(t, 10);
+  else [from, to] = t.split('-').map(v => parseInt(v.trim(), 10));
   if (from < 3) from = 3;
   if (to < 3) to = 3;
-
   s.payload.age_from = from;
   s.payload.age_to = to;
   s.step = 'kyu';
-
   await ctx.reply('Укажи кю:\n• 8\n• или 8-7');
 });
 
@@ -104,32 +92,18 @@ bot.on('text', async (ctx, next) => {
 bot.on('text', async (ctx, next) => {
   const s = getSession(ctx.from.id);
   if (s.mode !== 'single' || s.step !== 'kyu') return next();
-
-  const text = ctx.message.text.trim();
+  const t = ctx.message.text.trim();
   const single = /^\d{1,2}$/;
   const range = /^\d{1,2}\s*-\s*\d{1,2}$/;
-
-  if (!single.test(text) && !range.test(text)) {
-    await ctx.reply('❌ Формат: 8 или 8-7');
-    return;
-  }
-
+  if (!single.test(t) && !range.test(t)) return ctx.reply('❌ Формат: 8 или 8-7');
   let from, to;
-  if (single.test(text)) {
-    from = to = parseInt(text, 10);
-  } else {
-    [from, to] = text.split('-').map(v => parseInt(v.trim(), 10));
-  }
-
-  if (from < 1) from = 1;
-  if (to < 1) to = 1;
-  if (from > 11) from = 11;
-  if (to > 11) to = 11;
-
+  if (single.test(t)) from = to = parseInt(t, 10);
+  else [from, to] = t.split('-').map(v => parseInt(v.trim(), 10));
+  from = Math.min(11, Math.max(1, from));
+  to   = Math.min(11, Math.max(1, to));
   s.payload.kyu_from = from;
   s.payload.kyu_to = to;
   s.step = 'goal';
-
   await ctx.reply('Выбери цель тренировки:', goalMenu());
 });
 
@@ -137,82 +111,90 @@ bot.on('text', async (ctx, next) => {
 bot.on('text', async (ctx, next) => {
   const s = getSession(ctx.from.id);
   if (s.mode !== 'single' || s.step !== 'goal') return next();
-
-  const text = ctx.message.text;
-  let goal = null;
-  if (text === 'Обычная тренировка') goal = 'normal';
-  if (text === 'Подготовка к турниру') goal = 'tournament';
-  if (text === 'Подготовка к экзамену') goal = 'exam';
-
-  if (!goal) {
-    await ctx.reply('❌ Выбери цель кнопкой.');
-    return;
-  }
-
-  s.payload.goal = goal;
+  const t = ctx.message.text;
+  const map = {
+    'Обычная тренировка': 'normal',
+    'Подготовка к турниру': 'tournament',
+    'Подготовка к экзамену': 'exam'
+  };
+  if (!map[t]) return ctx.reply('❌ Выбери цель кнопкой.');
+  s.payload.goal = map[t];
   s.step = 'focus';
-
-  await ctx.reply(
-    'Выбери фокус (можно несколько). Нажимай кнопки, затем «Готово».',
-    focusMenu()
-  );
+  await ctx.reply('Выбери фокус (можно несколько), затем «Готово».', focusMenu());
 });
 
-/* ===== FOCUS (MULTI) ===== */
-bot.on('text', async (ctx) => {
+/* ===== FOCUS ===== */
+bot.on('text', async (ctx, next) => {
   const s = getSession(ctx.from.id);
-  if (s.mode !== 'single' || s.step !== 'focus') return;
-
-  const text = ctx.message.text;
-
+  if (s.mode !== 'single' || s.step !== 'focus') return next();
+  const t = ctx.message.text;
   const map = {
     '🥊 Кумите': 'kumite',
     '🏋️ Физика': 'physics',
     '🎯 Техника': 'technique',
     '🧘 Ката': 'kata'
   };
-
-  if (map[text]) {
-    s.focusSet.add(map[text]);
-    await ctx.reply(`Добавлено: ${map[text]}`);
-    return;
+  if (map[t]) {
+    s.focusSet.add(map[t]);
+    return ctx.reply(`Добавлено: ${map[t]}`);
   }
-
-  if (text === '✅ Готово') {
-    if (s.focusSet.size === 0) {
-      await ctx.reply('❌ Выбери хотя бы один фокус.');
-      return;
-    }
+  if (t === '✅ Готово') {
+    if (!s.focusSet.size) return ctx.reply('❌ Выбери хотя бы один фокус.');
     s.payload.focus = Array.from(s.focusSet);
-    s.step = 'done_focus';
-
-    await ctx.reply(
-      `✅ Принято:\n` +
-      `Возраст: ${s.payload.age_from}-${s.payload.age_to}\n` +
-      `Кю: ${s.payload.kyu_from}-${s.payload.kyu_to}\n` +
-      `Цель: ${s.payload.goal}\n` +
-      `Фокус: ${s.payload.focus.join(', ')}\n\n` +
-      `Дальше добавим длительность.`
+    s.step = 'duration';
+    const isYoung = s.payload.age_to <= 6;
+    return ctx.reply(
+      isYoung
+        ? 'Возраст ≤ 6. Длительность будет 30–40 минут автоматически.'
+        : 'Укажи длительность в минутах (например: 95)'
     );
-    return;
+  }
+  return ctx.reply('Выбирай фокус кнопками или нажми «Готово».');
+});
+
+/* ===== DURATION + CALL GAS ===== */
+bot.on('text', async (ctx) => {
+  const s = getSession(ctx.from.id);
+  if (s.mode !== 'single' || s.step !== 'duration') return;
+
+  const isYoung = s.payload.age_to <= 6;
+  let duration = null;
+
+  if (!isYoung) {
+    const t = ctx.message.text.trim();
+    const n = parseInt(t, 10);
+    if (!Number.isFinite(n) || n < 30 || n > 180) {
+      return ctx.reply('❌ Введи число минут (30–180).');
+    }
+    duration = n;
   }
 
-  if (text === '🔁 Начать заново') {
-    resetSession(ctx.from.id);
-    await ctx.reply('Начинаем заново. Выбери режим:', mainMenu());
-    return;
-  }
+  s.payload.duration_minutes = isYoung ? null : duration;
+  s.payload.mode = 'single';
 
-  await ctx.reply('Выбирай фокус кнопками или нажми «Готово».');
+  try {
+    const res = await axios.get(GAS_API_URL, { params: s.payload, timeout: 30000 });
+    const data = res.data;
+    if (data.status !== 'ok') return ctx.reply('❌ Ошибка API.');
+
+    const title = data.training?.title || 'Тренировка';
+    const short = data.training?.short_blocks || '';
+    await ctx.reply(`🏷 ${title}`);
+    if (short) {
+      const parts = String(short).split('→').map(p => p.trim()).filter(Boolean);
+      for (const p of parts) await ctx.reply(`• ${p}`);
+    } else {
+      await ctx.reply('Тренировка сформирована.');
+    }
+  } catch {
+    await ctx.reply('❌ Не удалось получить тренировку.');
+  }
 });
 
 /* ===== LAUNCH ===== */
 bot.launch({ dropPendingUpdates: true })
   .then(() => console.log('Bot started'))
-  .catch(err => {
-    console.error(err);
-    process.exit(1);
-  });
+  .catch(err => { console.error(err); process.exit(1); });
 
 process.once('SIGINT', () => bot.stop('SIGINT'));
 process.once('SIGTERM', () => bot.stop('SIGTERM'));
