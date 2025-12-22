@@ -91,14 +91,23 @@ async function callGAS(params) {
   return res.data;
 }
 
+/* ===== USER LABEL ===== */
+function getUserLabel(ctx) {
+  const u = ctx.from || {};
+  const id = u.id || '';
+  const username = u.username ? '@' + u.username : '';
+  const name = [u.first_name, u.last_name].filter(Boolean).join(' ');
+  return [id, username, name].filter(Boolean).join(' | ');
+}
+
 /* ===== статистика (fire-and-forget) ===== */
-function stat(event, extra = {}) {
+function stat(ctx, event) {
   axios.get(GAS_API_URL, {
     params: {
       action: 'stat',
-      event,              // ВАЖНО: совпадает с сайтом
+      event,
       source: 'telegram',
-      ...extra
+      extra: getUserLabel(ctx)
     }
   }).catch(() => {});
 }
@@ -138,7 +147,7 @@ function summary(s) {
 /* ================= START / RESET ================= */
 function startFlow(ctx) {
   resetSession(ctx.from.id);
-  stat('open_app'); // ← запуск бота
+  stat(ctx, 'bot_start');
   ctx.reply('🥋 AI-Методист\nВыбери формат:', mainMenu());
 }
 
@@ -162,6 +171,7 @@ bot.hears('▶️ Следующая тренировка', async ctx => {
   const s = getSession(ctx.from.id);
   if (s.step !== 'cycle_active' || !s.session_id) return;
 
+  stat(ctx, 'cycle_next');
   await ctx.reply('⏭ Запрашиваю следующую тренировку…');
 
   const data = await callGAS({
@@ -264,17 +274,17 @@ bot.on('text', async ctx => {
 
     if (text === '✅ Принять') {
       if (s.mode === 'single') {
+        stat(ctx, 'generate_single');
         await ctx.reply('⏳ Формирую тренировку…');
         const data = await callGAS({ ...s.payload, mode: 'single' });
-        stat('generate_click', { mode: 'single' }); // ← генерация
         s.step = 'done';
         return ctx.reply(renderTraining(data.training), mainMenu());
       }
 
       if (s.mode === 'cycle') {
+        stat(ctx, 'generate_cycle');
         await ctx.reply('⏳ Формирую цикл…');
         const data = await callGAS({ ...s.payload, mode: 'cycle' });
-        stat('generate_click', { mode: 'cycle' }); // ← генерация
 
         s.session_id = data.session_id;
         s.cycleTotal = s.payload.weeks * s.payload.trainings_per_week;
