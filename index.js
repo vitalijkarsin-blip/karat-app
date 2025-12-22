@@ -93,13 +93,13 @@ function helpText() {
   return (
     'ℹ️ Помощь\n\n' +
     'Режимы:\n' +
-    '• 🟦 Одна тренировка — выдаёт одну тренировку\n' +
-    '• 🟩 Цикл — создаёт цикл и кнопка «Следующая тренировка»\n\n' +
-    'Форматы ввода:\n' +
+    '• 🟦 Одна тренировка\n' +
+    '• 🟩 Цикл (есть кнопка «Следующая тренировка»)\n\n' +
+    'Форматы:\n' +
     '• Возраст: 10 или 10-11\n' +
     '• Кю: 8 или 8-7\n' +
-    '• Длительность: число минут (30–180)\n\n' +
-    'Если что-то пошло не так — жми «Начать заново».'
+    '• Длительность: 30–180\n\n' +
+    'Если что-то зависло — «Начать заново».'
   );
 }
 
@@ -275,12 +275,17 @@ bot.on('text', async (ctx) => {
     s.payload.mode = 'single';
     await ctx.reply('Формирую тренировку…');
 
-    const data = await callGAS(s.payload);
-    if (data.status !== 'ok') return ctx.reply('❌ Ошибка API');
+    try {
+      const data = await callGAS(s.payload);
+      if (data.status !== 'ok') return ctx.reply('❌ Ошибка API');
 
-    await ctx.reply(`🏷 ${data.training?.title || 'Тренировка'}`);
-    await ctx.reply(renderTrainingText(data.training), mainMenu());
-    s.step = 'done';
+      await ctx.reply(`🏷 ${data.training?.title || 'Тренировка'}`);
+      await ctx.reply(renderTrainingText(data.training), mainMenu());
+      s.step = 'done';
+    } catch (e) {
+      console.error('SINGLE ERROR', e?.response?.data || e.message);
+      await ctx.reply('❌ Ошибка запроса (single).');
+    }
     return;
   }
 
@@ -288,49 +293,64 @@ bot.on('text', async (ctx) => {
   s.payload.mode = 'cycle';
   await ctx.reply('Формирую цикл…');
 
-  const data = await callGAS(s.payload);
-  if (data.status !== 'ok') return ctx.reply('❌ Ошибка цикла');
+  try {
+    const data = await callGAS(s.payload);
+    if (data.status !== 'ok') return ctx.reply('❌ Ошибка цикла');
 
-  s.session_id = data.session_id;
-  s.cycleIndex = 0;
-  s.cycleTotal = s.payload.weeks * s.payload.trainings_per_week;
+    s.session_id = data.session_id;
+    s.cycleIndex = 0;
+    s.cycleTotal = s.payload.weeks * s.payload.trainings_per_week;
 
-  const first = await callGAS({ action: 'next', session_id: s.session_id });
-  if (first.status === 'ok' && first.training) {
-    s.cycleIndex = 1;
-    await ctx.reply(`🏷 Тренировка ${s.cycleIndex} из ${s.cycleTotal}`);
-    await ctx.reply(renderTrainingText(first.training), nextMenu());
-
-    // ✅ ВАЖНО: переводим состояние цикла, чтобы "Следующая" не улетала в duration
-    s.step = 'cycle_active';
+    const first = await callGAS({ action: 'next', session_id: s.session_id });
+    if (first.status === 'ok' && first.training) {
+      s.cycleIndex = 1;
+      await ctx.reply(`🏷 Тренировка ${s.cycleIndex} из ${s.cycleTotal}`);
+      await ctx.reply(renderTrainingText(first.training), nextMenu());
+      s.step = 'cycle_active';
+    } else {
+      await ctx.reply('❌ Не получил первую тренировку цикла.');
+    }
+  } catch (e) {
+    console.error('CYCLE ERROR', e?.response?.data || e.message);
+    await ctx.reply('❌ Ошибка запроса (cycle).');
   }
 });
 
-/* ===== NEXT (ONLY cycle_active) ===== */
-bot.hears('▶️ Следующая тренировка', async (ctx) => {
+/* ===== NEXT (catch any button text) ===== */
+bot.hears(/^(▶️\s*)?Следующая тренировка$/i, async (ctx) => {
   const s = getSession(ctx.from.id);
 
+  // покажем, что обработчик ТОЧНО сработал
+  await ctx.reply('⏭ Запрашиваю следующую тренировку…');
+
   if (s.mode !== 'cycle' || !s.session_id) {
-    return ctx.reply('❌ Цикл не запущен. Начни заново.', mainMenu());
+    return ctx.reply('❌ Цикл не запущен. Нажми «Начать заново».', mainMenu());
   }
 
-  // ✅ не даём кнопке попасть в "duration"
-  if (s.step !== 'cycle_active') {
-    s.step = 'cycle_active';
-  }
+  s.step = 'cycle_active';
 
-  const data = await callGAS({ action: 'next', session_id: s.session_id });
+  try {
+    const data = await callGAS({ action: 'next', session_id: s.session_id });
 
-  if (data.status === 'done') {
-    s.step = 'done';
-    return ctx.reply('✅ Цикл завершён', mainMenu());
-  }
+    if (data.status === 'done') {
+      s.step = 'done';
+      return ctx.reply('✅ Цикл завершён', mainMenu());
+    }
 
-  if (data.status === 'ok' && data.training) {
-    s.cycleIndex++;
-    await ctx.reply(`🏷 Тренировка ${s.cycleIndex} из ${s.cycleTotal}`);
-    await ctx.reply(renderTrainingText(data.training), nextMenu());
-    s.step = 'cycle_active';
+    if (data.status === 'ok' && data.training) {
+      s.cycleIndex++;
+      await ctx.reply(`🏷 Тренировка ${s.cycleIndex} из ${s.cycleTotal}`);
+      await ctx.reply(renderTrainingText(data.training), nextMenu());
+      s.step = 'cycle_active';
+      return;
+    }
+
+    // если пришло что-то странное
+    console.error('NEXT BAD DATA', data);
+    return ctx.reply('❌ Не получил тренировку (next).');
+  } catch (e) {
+    console.error('NEXT ERROR', e?.response?.data || e.message);
+    return ctx.reply('❌ Ошибка запроса (next).');
   }
 });
 
