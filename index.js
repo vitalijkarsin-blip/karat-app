@@ -17,10 +17,9 @@ const sessions = new Map();
 
 function resetSession(uid) {
   sessions.set(uid, {
-    mode: null,
-    step: null,
+    mode: null,               // 'single' | 'cycle'
+    step: 'select_mode',      // select_mode | duration | cycle_active | done
     payload: {},
-    focusSet: new Set(),
     session_id: null,
     cycleIndex: 0,
     cycleTotal: 0
@@ -88,71 +87,69 @@ bot.hears('ℹ️ Помощь', ctx => {
   ctx.reply(
     'ℹ️ Помощь\n\n' +
     '• Одна тренировка — разовый план\n' +
-    '• Цикл — серия тренировок с кнопкой «Следующая тренировка»\n\n' +
+    '• Цикл — серия тренировок\n' +
+    '• Кнопка «Следующая тренировка» работает ТОЛЬКО в цикле\n\n' +
     'Если что-то зависло — «Начать заново».',
     mainMenu()
   );
 });
 
-/* ===== MODE ===== */
-bot.on('text', async (ctx) => {
+/* ===== NEXT (ТОЛЬКО КНОПКА) ===== */
+bot.hears('▶️ Следующая тренировка', async ctx => {
+  const s = getSession(ctx.from.id);
+
+  if (s.step !== 'cycle_active' || !s.session_id) {
+    return;
+  }
+
+  await ctx.reply('⏭ Запрашиваю следующую тренировку…');
+
+  try {
+    const data = await callGAS({
+      action: 'next',
+      session_id: s.session_id
+    });
+
+    if (data.status === 'done') {
+      s.step = 'done';
+      return ctx.reply('✅ Цикл завершён', mainMenu());
+    }
+
+    if (data.status === 'ok' && data.training) {
+      s.cycleIndex++;
+      await ctx.reply(`🏷 Тренировка ${s.cycleIndex} из ${s.cycleTotal}`);
+      await ctx.reply(renderTraining(data.training), nextMenu());
+      return;
+    }
+
+    await ctx.reply('❌ Не получил тренировку.');
+  } catch (e) {
+    console.error('NEXT ERROR', e?.response?.data || e.message);
+    await ctx.reply('❌ Ошибка запроса.');
+  }
+});
+
+/* ===== TEXT FLOW ===== */
+bot.on('text', async ctx => {
   const text = ctx.message.text;
   const s = getSession(ctx.from.id);
 
-  /* ===== ГЛАВНЫЙ ФИКС =====
-     Если цикл активен — ЛЮБОЙ текст (кроме служебных)
-     считается нажатием "Следующая тренировка"
-  */
-  if (s.step === 'cycle_active') {
-    if (text === 'ℹ️ Помощь' || text === '🔁 Начать заново') return;
-
-    await ctx.reply('⏭ Запрашиваю следующую тренировку…');
-
-    try {
-      const data = await callGAS({
-        action: 'next',
-        session_id: s.session_id
-      });
-
-      if (data.status === 'done') {
-        s.step = 'done';
-        return ctx.reply('✅ Цикл завершён', mainMenu());
-      }
-
-      if (data.status === 'ok' && data.training) {
-        s.cycleIndex++;
-        await ctx.reply(
-          `🏷 Тренировка ${s.cycleIndex} из ${s.cycleTotal}`
-        );
-        await ctx.reply(
-          renderTraining(data.training),
-          nextMenu()
-        );
-        return;
-      }
-
-      await ctx.reply('❌ Не получил тренировку.');
-    } catch (e) {
-      console.error('NEXT ERROR', e?.response?.data || e.message);
-      await ctx.reply('❌ Ошибка запроса.');
-    }
-    return;
-  }
-
   /* ===== ВЫБОР РЕЖИМА ===== */
-  if (text === '🟩 Цикл') {
-    s.mode = 'cycle';
-    s.step = 'duration';
-    s.payload = {};
-    ctx.reply('Укажи длительность тренировки (30–180):');
-    return;
-  }
+  if (s.step === 'select_mode') {
+    if (text === '🟦 Одна тренировка') {
+      s.mode = 'single';
+      s.step = 'duration';
+      s.payload = {};
+      return ctx.reply('Укажи длительность тренировки (30–180):');
+    }
 
-  if (text === '🟦 Одна тренировка') {
-    s.mode = 'single';
-    s.step = 'duration';
-    s.payload = {};
-    ctx.reply('Укажи длительность тренировки (30–180):');
+    if (text === '🟩 Цикл') {
+      s.mode = 'cycle';
+      s.step = 'duration';
+      s.payload = {};
+      return ctx.reply('Укажи длительность тренировки (30–180):');
+    }
+
     return;
   }
 
@@ -167,7 +164,11 @@ bot.on('text', async (ctx) => {
 
     if (s.mode === 'single') {
       await ctx.reply('Формирую тренировку…');
-      const data = await callGAS({ ...s.payload, mode: 'single' });
+      const data = await callGAS({
+        ...s.payload,
+        mode: 'single'
+      });
+
       if (data.status === 'ok') {
         await ctx.reply(renderTraining(data.training), mainMenu());
         s.step = 'done';
@@ -177,6 +178,7 @@ bot.on('text', async (ctx) => {
 
     if (s.mode === 'cycle') {
       await ctx.reply('Формирую цикл…');
+
       const data = await callGAS({
         ...s.payload,
         mode: 'cycle',
@@ -186,23 +188,20 @@ bot.on('text', async (ctx) => {
 
       s.session_id = data.session_id;
       s.cycleTotal = 12;
-      s.cycleIndex = 1;
+      s.cycleIndex = 0;
 
       const first = await callGAS({
         action: 'next',
         session_id: s.session_id
       });
 
-      if (first.status === 'ok') {
-        await ctx.reply(
-          `🏷 Тренировка 1 из ${s.cycleTotal}`
-        );
-        await ctx.reply(
-          renderTraining(first.training),
-          nextMenu()
-        );
+      if (first.status === 'ok' && first.training) {
+        s.cycleIndex = 1;
+        await ctx.reply(`🏷 Тренировка 1 из ${s.cycleTotal}`);
+        await ctx.reply(renderTraining(first.training), nextMenu());
         s.step = 'cycle_active';
       }
+      return;
     }
   }
 });
