@@ -18,7 +18,7 @@ const sessions = new Map();
 function resetSession(uid) {
   sessions.set(uid, {
     mode: null,
-    step: 'mode',
+    step: 'mode', // mode | weeks | tpw | age | kyu | goal | focus | duration | confirm | cycle_active | done
     payload: { focus: [] },
     session_id: null,
     cycleIndex: 0,
@@ -31,8 +31,8 @@ function getSession(uid) {
   return sessions.get(uid);
 }
 
-/* ===== UI (НЕ СВОРАЧИВАЮТСЯ) ===== */
-const baseKeyboard = [
+/* ===== UI ===== */
+const base = [
   ['🚀 Start'],
   ['ℹ️ Помощь', '🔁 Начать заново']
 ];
@@ -40,14 +40,14 @@ const baseKeyboard = [
 const mainMenu = () =>
   Markup.keyboard([
     ['🟦 Одна тренировка', '🟩 Цикл'],
-    ...baseKeyboard
+    ...base
   ]).resize();
 
 const goalMenu = () =>
   Markup.keyboard([
     ['🏋️ Обычная тренировка', '🏆 Подготовка к турниру'],
     ['🎓 Подготовка к аттестации'],
-    ...baseKeyboard
+    ...base
   ]).resize();
 
 const focusMenu = () =>
@@ -55,13 +55,19 @@ const focusMenu = () =>
     ['⚡ Физика', '🥋 Техника'],
     ['🧘 Ката', '🤼 Кумите'],
     ['✅ Принять', '➡️ Пропустить'],
-    ...baseKeyboard
+    ...base
+  ]).resize();
+
+const confirmMenu = () =>
+  Markup.keyboard([
+    ['✅ Принять', '✏️ Изменить'],
+    ...base
   ]).resize();
 
 const nextMenu = () =>
   Markup.keyboard([
     ['▶️ Следующая тренировка'],
-    ...baseKeyboard
+    ...base
   ]).resize();
 
 /* ===== HELPERS ===== */
@@ -97,34 +103,42 @@ function renderTraining(training) {
   return training.full_plan || 'Тренировка сформирована.';
 }
 
-/* ===== START / RESET ===== */
+function focusText(arr) {
+  if (!arr || arr.length === 0) return 'не задан';
+  return arr.join(', ');
+}
+
+function summary(s) {
+  const p = s.payload;
+  return (
+    '📋 *Проверь параметры*\n\n' +
+    `Формат: ${s.mode === 'single' ? 'Одна тренировка' : 'Цикл'}\n` +
+    (s.mode === 'cycle'
+      ? `Недели: ${p.weeks}\nТренировок в неделю: ${p.trainings_per_week}\n`
+      : '') +
+    `Возраст: ${p.age_from}-${p.age_to}\n` +
+    `Кю: ${p.kyu_from}-${p.kyu_to}\n` +
+    `Цель: ${p.goal}\n` +
+    `Приоритеты: ${focusText(p.focus)}\n` +
+    `Длительность: ${p.duration_minutes} мин`
+  );
+}
+
+/* ===== START ===== */
 function startFlow(ctx) {
   resetSession(ctx.from.id);
-  ctx.reply(
-    '🥋 AI-Методист\n\nВыбери формат тренировки:',
-    mainMenu()
-  );
+  ctx.reply('🥋 AI-Методист\nВыбери формат:', mainMenu());
 }
 
 bot.start(startFlow);
 bot.hears('🚀 Start', startFlow);
-
-bot.hears('🔁 Начать заново', ctx => {
-  startFlow(ctx);
-});
+bot.hears('🔁 Начать заново', startFlow);
 
 /* ===== HELP ===== */
 bot.hears('ℹ️ Помощь', ctx => {
-  const s = getSession(ctx.from.id);
-
   ctx.reply(
-    'ℹ️ Помощь\n\n' +
-    '1️⃣ Выбери формат: одна тренировка или цикл\n' +
-    '2️⃣ Отвечай на вопросы по шагам\n' +
-    '3️⃣ В цикле используй кнопку «Следующая тренировка»\n\n' +
-    'Если что-то пошло не так — нажми «Начать заново»\n' +
-    'Или «Start», если чат был очищен.',
-    s.step === 'cycle_active' ? nextMenu() : mainMenu()
+    'ℹ️ Помощь\n\nЗаполняй параметры по шагам.\nПеред генерацией будет показана сводка.',
+    mainMenu()
   );
 });
 
@@ -145,14 +159,12 @@ bot.hears('▶️ Следующая тренировка', async ctx => {
     return ctx.reply('✅ Цикл завершён', mainMenu());
   }
 
-  if (data.status === 'ok') {
-    s.cycleIndex++;
-    await ctx.reply(`🏷 Тренировка ${s.cycleIndex} из ${s.cycleTotal}`);
-    return ctx.reply(renderTraining(data.training), nextMenu());
-  }
+  s.cycleIndex++;
+  await ctx.reply(`🏷 Тренировка ${s.cycleIndex} из ${s.cycleTotal}`);
+  return ctx.reply(renderTraining(data.training), nextMenu());
 });
 
-/* ===== TEXT FLOW (ЛОГИКА НЕ МЕНЯЛАСЬ) ===== */
+/* ===== TEXT FLOW ===== */
 bot.on('text', async ctx => {
   const text = ctx.message.text;
   const s = getSession(ctx.from.id);
@@ -161,12 +173,12 @@ bot.on('text', async ctx => {
     if (text === '🟦 Одна тренировка') {
       s.mode = 'single';
       s.step = 'age';
-      return ctx.reply('Укажи возраст (3–70):', mainMenu());
+      return ctx.reply('Возраст (3–70):', mainMenu());
     }
     if (text === '🟩 Цикл') {
       s.mode = 'cycle';
       s.step = 'weeks';
-      return ctx.reply('Укажи количество недель:', mainMenu());
+      return ctx.reply('Количество недель:', mainMenu());
     }
     return;
   }
@@ -174,31 +186,31 @@ bot.on('text', async ctx => {
   if (s.step === 'weeks') {
     s.payload.weeks = parseInt(text, 10);
     s.step = 'tpw';
-    return ctx.reply('Сколько тренировок в неделю?', mainMenu());
+    return ctx.reply('Тренировок в неделю:', mainMenu());
   }
 
   if (s.step === 'tpw') {
     s.payload.trainings_per_week = parseInt(text, 10);
     s.step = 'age';
-    return ctx.reply('Укажи возраст (3–70):', mainMenu());
+    return ctx.reply('Возраст (3–70):', mainMenu());
   }
 
   if (s.step === 'age') {
-    const nums = text.match(/\d+/g)?.map(Number);
-    if (!nums) return;
-    s.payload.age_from = nums[0];
-    s.payload.age_to = nums[1] ?? nums[0];
+    const n = text.match(/\d+/g)?.map(Number);
+    if (!n) return;
+    s.payload.age_from = n[0];
+    s.payload.age_to = n[1] ?? n[0];
     s.step = 'kyu';
-    return ctx.reply('Укажи кю (1–11):', mainMenu());
+    return ctx.reply('Кю (1–11):', mainMenu());
   }
 
   if (s.step === 'kyu') {
-    const nums = text.match(/\d+/g)?.map(Number);
-    if (!nums) return;
-    s.payload.kyu_from = nums[0];
-    s.payload.kyu_to = nums[1] ?? nums[0];
+    const n = text.match(/\d+/g)?.map(Number);
+    if (!n) return;
+    s.payload.kyu_from = n[0];
+    s.payload.kyu_to = n[1] ?? n[0];
     s.step = 'goal';
-    return ctx.reply('Выбери цель:', goalMenu());
+    return ctx.reply('Цель тренировки:', goalMenu());
   }
 
   if (s.step === 'goal') {
@@ -206,13 +218,13 @@ bot.on('text', async ctx => {
     if (text.includes('турниру')) s.payload.goal = 'tournament';
     if (text.includes('аттестации')) s.payload.goal = 'exam';
     s.step = 'focus';
-    return ctx.reply('Выбери приоритеты:', focusMenu());
+    return ctx.reply('Приоритеты (можно несколько):', focusMenu());
   }
 
   if (s.step === 'focus') {
     if (text === '➡️ Пропустить' || text === '✅ Принять') {
       s.step = 'duration';
-      return ctx.reply('Укажи длительность тренировки:', mainMenu());
+      return ctx.reply('Длительность тренировки:', mainMenu());
     }
 
     if (text.includes('Физика')) s.payload.focus.push('physics');
@@ -224,34 +236,44 @@ bot.on('text', async ctx => {
   }
 
   if (s.step === 'duration') {
-    const n = parseInt(text, 10);
-    s.payload.duration_minutes = n;
+    s.payload.duration_minutes = parseInt(text, 10);
+    s.step = 'confirm';
+    return ctx.reply(summary(s), { parse_mode: 'Markdown', ...confirmMenu() });
+  }
 
-    if (s.mode === 'single') {
-      await ctx.reply('⏳ Формирую тренировку…');
-      const data = await callGAS({ ...s.payload, mode: 'single' });
-      s.step = 'done';
-      return ctx.reply(renderTraining(data.training), mainMenu());
+  if (s.step === 'confirm') {
+    if (text === '✏️ Изменить') {
+      s.step = 'age';
+      return ctx.reply('Ок, начнём заново. Возраст:', mainMenu());
     }
 
-    if (s.mode === 'cycle') {
-      await ctx.reply('⏳ Формирую цикл…');
-      const data = await callGAS({ ...s.payload, mode: 'cycle' });
+    if (text === '✅ Принять') {
+      if (s.mode === 'single') {
+        await ctx.reply('⏳ Формирую тренировку…');
+        const data = await callGAS({ ...s.payload, mode: 'single' });
+        s.step = 'done';
+        return ctx.reply(renderTraining(data.training), mainMenu());
+      }
 
-      s.session_id = data.session_id;
-      s.cycleTotal = s.payload.weeks * s.payload.trainings_per_week;
-      s.cycleIndex = 0;
+      if (s.mode === 'cycle') {
+        await ctx.reply('⏳ Формирую цикл…');
+        const data = await callGAS({ ...s.payload, mode: 'cycle' });
 
-      await ctx.reply('⏭ Запрашиваю первую тренировку…');
-      const first = await callGAS({
-        action: 'next',
-        session_id: s.session_id
-      });
+        s.session_id = data.session_id;
+        s.cycleTotal = s.payload.weeks * s.payload.trainings_per_week;
+        s.cycleIndex = 0;
 
-      s.step = 'cycle_active';
-      s.cycleIndex = 1;
-      await ctx.reply(`🏷 Тренировка 1 из ${s.cycleTotal}`);
-      return ctx.reply(renderTraining(first.training), nextMenu());
+        await ctx.reply('⏭ Запрашиваю первую тренировку…');
+        const first = await callGAS({
+          action: 'next',
+          session_id: s.session_id
+        });
+
+        s.step = 'cycle_active';
+        s.cycleIndex = 1;
+        await ctx.reply(`🏷 Тренировка 1 из ${s.cycleTotal}`);
+        return ctx.reply(renderTraining(first.training), nextMenu());
+      }
     }
   }
 });
