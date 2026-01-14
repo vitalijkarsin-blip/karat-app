@@ -57,10 +57,19 @@ bot.on('text', async (ctx) => {
       });
 
       if (res && res.status === 'ok') {
-        s.step = null;
-        await ctx.reply(`✅ Готово! Уведомления подключены.\nРебёнок: {ФИО}\n\nЧтобы привязать другого ребёнка — отправьте /start ещё раз.`);
-        return;
-      }
+  s.step = null;
+
+  const fio = res.child_fio || s.lastFio || '—';
+
+  await ctx.reply(
+    `✅ Готово! Уведомления подключены.\n` +
+    `Ребёнок: ${fio}\n\n` +
+    `Чтобы привязать другого ребёнка — отправьте /start ещё раз.`
+  );
+
+  return;
+}
+
 
       if (res && res.status === 'not_found') {
         await ctx.reply('Не нашёл ребёнка в базе. Проверь написание и попробуй ещё раз. Или /start заново.');
