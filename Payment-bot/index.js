@@ -37,7 +37,7 @@ bot.start(async (ctx) => {
   const chatId = ctx.chat.id;
   const s = getSession(chatId);
   s.step = 'WAIT_CHILD_NAME';
-  await ctx.reply('Напиши *Фамилию Имя ребёнка* (как в таблице Children).', { parse_mode: 'Markdown' });
+  await ctx.reply('Напиши *Фамилию Имя ребёнка* (полное например Карсин Александр).', { parse_mode: 'Markdown' });
 });
 
 bot.on('text', async (ctx) => {
@@ -58,12 +58,12 @@ bot.on('text', async (ctx) => {
 
       if (res && res.status === 'ok') {
         s.step = null;
-        await ctx.reply(`✅ Привязка выполнена.\nРебёнок: ${res.child_fio}\nКлуб: ${res.club || '-'}`);
+        await ctx.reply(`✅ Готово! Уведомления подключены.\nРебёнок: {ФИО}\n\nЧтобы привязать другого ребёнка — отправьте /start ещё раз.`);
         return;
       }
 
       if (res && res.status === 'not_found') {
-        await ctx.reply('Не нашёл ребёнка. Проверь написание и попробуй ещё раз. Или /start заново.');
+        await ctx.reply('Не нашёл ребёнка в базе. Проверь написание и попробуй ещё раз. Или /start заново.');
         return;
       }
 
