@@ -62,83 +62,275 @@ uint32_t nextSimMs = 0;
 
 const char kIndexHtml[] PROGMEM = R"HTML(
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>KickShield Counter</title>
+  <title>Счётчик макивары</title>
   <style>
     :root { color-scheme: light; }
-    body { font-family: "Trebuchet MS", "Segoe UI", sans-serif; margin: 16px; background: #f2f0ea; color: #1d1b18; }
-    h1 { margin: 0 0 12px; letter-spacing: 1px; }
-    .panel { background: #fff; padding: 12px; border-radius: 8px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
-    .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-    .row button { padding: 8px 12px; border: 0; border-radius: 6px; background: #2f4a6d; color: #fff; cursor: pointer; }
-    .row button.secondary { background: #6d3b2f; }
-    .row input { padding: 6px 8px; width: 110px; }
-    .stat { display: inline-block; min-width: 110px; }
-    .label { font-weight: 600; }
-    @media (max-width: 640px) {
-      .row { flex-direction: column; align-items: stretch; }
-      .row button, .row input { width: 100%; }
+    body {
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+      margin: 14px;
+      background: #f2f0ea;
+      color: #1d1b18;
+    }
+    h1 { margin: 0 0 12px; font-size: 20px; }
+
+    .panel {
+      background: #fff;
+      padding: 12px;
+      border-radius: 10px;
+      margin-bottom: 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+    }
+
+    button {
+      padding: 10px 10px;
+      border: 0;
+      border-radius: 10px;
+      background: #2f4a6d;
+      color: #fff;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 14px;
+    }
+    button.secondary { background: #6d3b2f; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .card {
+      background: #fbfbfb;
+      border: 1px solid rgba(0,0,0,0.08);
+      border-radius: 12px;
+      padding: 12px;
+      min-height: 78px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    .card .title {
+      font-size: 13px;
+      opacity: 0.75;
+      margin-bottom: 6px;
+      font-weight: 600;
+    }
+    .card .value {
+      font-size: 28px;
+      font-weight: 800;
+      line-height: 1.0;
+    }
+    .subvalue {
+      margin-top: 6px;
+      font-size: 13px;
+      opacity: 0.8;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .settings {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    label {
+      font-size: 13px;
+      font-weight: 600;
+      opacity: 0.8;
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    input[type="number"]{
+      width: 100%;
+      padding: 10px 10px;
+      border-radius: 10px;
+      border: 1px solid rgba(0,0,0,0.18);
+      font-size: 16px;
+    }
+
+    .toggle {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 10px;
+      border-radius: 10px;
+      border: 1px solid rgba(0,0,0,0.18);
+      background: #fff;
+      height: 44px;
+    }
+    .toggle span { font-size: 14px; font-weight: 700; opacity: 0.85; }
+
+    .footerBar {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .bigBtn {
+      padding: 14px 12px;
+      border-radius: 14px;
+      font-size: 16px;
+      font-weight: 900;
+    }
+
+    .statusLine {
+      font-size: 13px;
+      opacity: 0.8;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .statusLine b { opacity: 1; }
+
+    @media (max-width: 520px) {
+      .controls { grid-template-columns: repeat(3, 1fr); }
     }
   </style>
 </head>
 <body>
-  <h1>KickShield Counter</h1>
+
+  <h1>🥋 Счётчик макивары</h1>
 
   <div class="panel">
-    <div class="row">
-      <button onclick="startMode('free')">Start Free</button>
-      <button onclick="startMode('10')">Start 10s</button>
-      <button onclick="startMode('20')">Start 20s</button>
-      <button onclick="startMode('30')">Start 30s</button>
-      <button onclick="startMode('60')">Start 60s</button>
-      <button class="secondary" onclick="stopRun()">Stop</button>
+    <div class="controls">
+      <button onclick="startMode('free')">Свободно</button>
+      <button onclick="startMode('10')">10 сек</button>
+      <button onclick="startMode('20')">20 сек</button>
+      <button onclick="startMode('30')">30 сек</button>
+      <button onclick="startMode('60')">60 сек</button>
     </div>
   </div>
 
   <div class="panel">
+    <div class="grid">
+      <div class="card">
+        <div class="title">Режим</div>
+        <div class="value" id="mode">—</div>
+        <div class="subvalue">Осталось: <b id="timeLeft">0</b> сек</div>
+      </div>
+
+      <div class="card">
+        <div class="title">Удары</div>
+        <div class="value" id="hits">0</div>
+      </div>
+
+      <div class="card">
+        <div class="title">Темп (сейчас)</div>
+        <div class="value" id="tempo">0</div>
+        <div class="subvalue">уд/мин</div>
+      </div>
+
+      <div class="card">
+        <div class="title">Темп (средний)</div>
+        <div class="value" id="tempoAvg">0</div>
+        <div class="subvalue">уд/мин</div>
+      </div>
+
+      <div class="card">
+        <div class="title">Серия</div>
+        <div class="value" id="series">0</div>
+      </div>
+
+      <div class="card">
+        <div class="title">Макс. серия</div>
+        <div class="value" id="maxSeries">0</div>
+      </div>
+    </div>
+
+    <div style="height:10px"></div>
+
     <div class="row">
-      <label class="label" for="threshold">Threshold</label>
-      <input id="threshold" type="number" min="0" max="4095">
-      <label class="label" for="lockout">Lockout ms</label>
-      <input id="lockout" type="number" min="0" max="5000">
-      <label class="label" for="seriesGap">Series gap ms</label>
-      <input id="seriesGap" type="number" min="0" max="10000">
-      <label class="label" for="sampleWindow">Window ms</label>
-      <input id="sampleWindow" type="number" min="1" max="50">
-      <label class="label" for="simulate">Simulate</label>
-      <input id="simulate" type="checkbox">
-      <button onclick="saveConfig()">Save</button>
+      <div class="card">
+        <div class="title">Пик (последний)</div>
+        <div class="value" id="lastPeak">0</div>
+        <div class="subvalue">Счёт: <b id="lastScore">0</b></div>
+      </div>
+
+      <div class="card">
+        <div class="title">Пик (лучший)</div>
+        <div class="value" id="bestPeak">0</div>
+        <div class="subvalue">Счёт: <b id="bestScore">0</b></div>
+      </div>
+    </div>
+
+    <div style="height:12px"></div>
+
+    <div class="footerBar">
+      <button class="bigBtn" onclick="stopRun()">СТОП</button>
+      <button class="bigBtn secondary" onclick="toggleSettings()">НАСТРОЙКИ</button>
+    </div>
+
+    <div style="height:10px"></div>
+    <div class="statusLine">
+      <span>Статус: <b id="running">false</b></span>
     </div>
   </div>
 
-  <div class="panel">
-    <div class="row">
-      <span class="stat"><span class="label">Running:</span> <span id="running">false</span></span>
-      <span class="stat"><span class="label">Mode:</span> <span id="mode">FREE</span></span>
-      <span class="stat"><span class="label">Time left:</span> <span id="timeLeft">0</span></span>
-      <span class="stat"><span class="label">Hits:</span> <span id="hits">0</span></span>
-      <span class="stat"><span class="label">Tempo:</span> <span id="tempo">0</span></span>
+  <div class="panel" id="settingsPanel" style="display:none;">
+    <h1 style="font-size:16px;margin:0 0 10px;">⚙️ Настройки</h1>
+
+    <div class="settings">
+      <div>
+        <label for="threshold">Порог (Threshold)</label>
+        <input id="threshold" type="number" min="0" max="4095">
+      </div>
+
+      <div>
+        <label for="lockout">Блокировка (мс)</label>
+        <input id="lockout" type="number" min="0" max="5000">
+      </div>
+
+      <div>
+        <label for="seriesGap">Разрыв серии (мс)</label>
+        <input id="seriesGap" type="number" min="0" max="10000">
+      </div>
+
+      <div>
+        <label for="sampleWindow">Окно (мс)</label>
+        <input id="sampleWindow" type="number" min="1" max="50">
+      </div>
+
+      <div class="toggle" style="grid-column:1 / -1;">
+        <input id="simulate" type="checkbox" style="transform:scale(1.3);">
+        <span>Симуляция (тест без ударов)</span>
+      </div>
     </div>
-    <div class="row">
-      <span class="stat"><span class="label">Series:</span> <span id="series">0</span></span>
-      <span class="stat"><span class="label">Max series:</span> <span id="maxSeries">0</span></span>
-      <span class="stat"><span class="label">Last peak:</span> <span id="lastPeak">0</span></span>
-      <span class="stat"><span class="label">Last score:</span> <span id="lastScore">0</span></span>
-      <span class="stat"><span class="label">Best peak:</span> <span id="bestPeak">0</span></span>
-      <span class="stat"><span class="label">Best score:</span> <span id="bestScore">0</span></span>
-    </div>
+
+    <div style="height:10px"></div>
+    <button class="bigBtn" style="width:100%;" onclick="saveConfig()">СОХРАНИТЬ</button>
   </div>
 
   <script>
+    let configHydrated = false;
+
     async function startMode(mode) {
       await fetch(`/api/start?mode=${mode}`, { method: 'POST' });
     }
+
     async function stopRun() {
       await fetch('/api/stop', { method: 'POST' });
     }
+
+    function toggleSettings() {
+      const p = document.getElementById('settingsPanel');
+      p.style.display = (p.style.display === 'none') ? 'block' : 'none';
+    }
+
     async function saveConfig() {
       const params = new URLSearchParams();
       params.set('threshold', document.getElementById('threshold').value);
@@ -148,41 +340,50 @@ const char kIndexHtml[] PROGMEM = R"HTML(
       params.set('simulate', document.getElementById('simulate').checked ? '1' : '0');
       await fetch(`/api/config?${params.toString()}`, { method: 'POST' });
     }
+
     function updateStatus(data) {
       document.getElementById('running').textContent = data.running ? 'true' : 'false';
-      document.getElementById('mode').textContent = data.mode || 'FREE';
-      document.getElementById('timeLeft').textContent = Math.max(0, Math.floor(data.time_left_ms / 1000));
+      document.getElementById('mode').textContent = data.mode || '—';
+      document.getElementById('timeLeft').textContent = Math.max(0, Math.floor((data.time_left_ms || 0) / 1000));
+
       document.getElementById('hits').textContent = data.hits || 0;
       document.getElementById('tempo').textContent = data.tempo_hpm || 0;
+      document.getElementById('tempoAvg').textContent = data.tempo_avg_hpm || 0;
+
       document.getElementById('series').textContent = data.series || 0;
       document.getElementById('maxSeries').textContent = data.maxSeries || 0;
+
       document.getElementById('lastPeak').textContent = data.lastPeak || 0;
       document.getElementById('lastScore').textContent = data.lastScore || 0;
       document.getElementById('bestPeak').textContent = data.bestPeak || 0;
       document.getElementById('bestScore').textContent = data.bestScore || 0;
-      if (data.threshold !== undefined) {
+
+      if (!configHydrated && data.threshold !== undefined) {
         document.getElementById('threshold').value = data.threshold;
         document.getElementById('lockout').value = data.lockout_ms;
         document.getElementById('seriesGap').value = data.series_gap_ms;
         document.getElementById('sampleWindow').value = data.sample_window_ms;
         document.getElementById('simulate').checked = data.simulate ? true : false;
+        configHydrated = true;
       }
     }
+
     async function pollStatus() {
       try {
-        const res = await fetch('/api/status');
+        const res = await fetch('/api/status', { cache: 'no-store' });
         const data = await res.json();
         updateStatus(data);
-      } catch (e) {
-        // ignore
-      }
+      } catch (e) {}
     }
-    setInterval(pollStatus, 150);
+
+    setInterval(pollStatus, 200);
     pollStatus();
   </script>
+
 </body>
 </html>
 )HTML";
+
 
 const char *modeToString(Mode mode) {
   switch (mode) {
@@ -375,6 +576,17 @@ uint32_t tempoFromSession(uint32_t endMs) {
   return (hits * 60000UL) / duration;
 }
 
+uint32_t tempoAvgNow(uint32_t nowMs) {
+  if (hits == 0 || sessionStartMs == 0) {
+    return 0;
+  }
+  uint32_t duration = nowMs - sessionStartMs;
+  if (duration == 0) {
+    return 0;
+  }
+  return (hits * 60000UL) / duration;
+}
+
 int readPeak() {
   uint32_t startUs = micros();
   uint32_t windowUs = static_cast<uint32_t>(config.sampleWindowMs) * 1000UL;
@@ -476,13 +688,15 @@ void handleStatus() {
     uint32_t elapsed = nowMs - sessionStartMs;
     timeLeft = (elapsed >= sessionDurationMs) ? 0 : (sessionDurationMs - elapsed);
   }
-  uint32_t tempo = running ? tempoHpm(nowMs) : tempoFromSession(sessionStopMs);
+  uint32_t tempoInstant = running ? tempoHpm(nowMs) : tempoFromSession(sessionStopMs);
+  uint32_t tempoAvg = running ? tempoAvgNow(nowMs) : tempoFromSession(sessionStopMs);
   String json = "{";
   json += "\"running\":" + String(running ? "true" : "false");
   json += ",\"mode\":\"" + String(modeToString(currentMode)) + "\"";
   json += ",\"time_left_ms\":" + String(timeLeft);
   json += ",\"hits\":" + String(hits);
-  json += ",\"tempo_hpm\":" + String(tempo);
+  json += ",\"tempo_hpm\":" + String(tempoInstant);
+  json += ",\"tempo_avg_hpm\":" + String(tempoAvg);
   json += ",\"series\":" + String(series);
   json += ",\"maxSeries\":" + String(maxSeries);
   json += ",\"lastPeak\":" + String(lastPeak);
