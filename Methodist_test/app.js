@@ -1,4 +1,4 @@
-﻿приветconst form = document.getElementById('requestForm');
+﻿const form = document.getElementById('requestForm');
 const result = document.getElementById('result');
 
 const titleEl = document.getElementById('trainingTitle');
