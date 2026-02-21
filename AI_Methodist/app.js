@@ -13,6 +13,8 @@ const acceptCycleBtn = document.getElementById('acceptCycleBtn');
 const nextBtn = document.getElementById('nextBtn');
 const resetBtn = document.getElementById('resetBtn');
 
+const downloadBtn = document.getElementById('downloadBtn');
+
 const output = document.getElementById('output');
 
 /* ===== BUTTON LOADER ===== */
@@ -71,6 +73,71 @@ function focusToText(focus) {
 function setCycleTitle() {
   titleEl.textContent = `Тренировка ${cycleIndex} из ${cycleTotal}. Фокус на ${cycleFocusText}`;
 }
+
+
+function buildDownloadText() {
+  // Берём заголовок, короткие блоки и полный план (если есть)
+  const title = (titleEl && titleEl.textContent) ? titleEl.textContent.trim() : 'Тренировка';
+
+  const shortList = [];
+  if (blocksEl) {
+    blocksEl.querySelectorAll('li').forEach(li => {
+      const t = (li.textContent || '').trim();
+      if (t) shortList.push('• ' + t);
+    });
+  }
+
+  const full = (detailsContent && detailsContent.textContent)
+    ? detailsContent.textContent.trim()
+    : '';
+
+  let out = `# ${title}\n\n`;
+
+  if (shortList.length) {
+    out += `Кратко:\n${shortList.join('\n')}\n\n`;
+  }
+
+  if (full) {
+    out += `Полный план:\n${full}\n`;
+  } else if (!shortList.length) {
+    out += `План пока не сформирован.\n`;
+  }
+
+  return out;
+}
+
+function downloadTextFile(filename, text) {
+  const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+
+  URL.revokeObjectURL(url);
+}
+
+function safeFileName(s) {
+  return String(s || 'training')
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}\-_ ]/gu, '')
+    .trim()
+    .replace(/\s+/g, '_')
+    .slice(0, 60) || 'training';
+}
+
+if (downloadBtn) {
+  downloadBtn.addEventListener('click', () => {
+    const text = buildDownloadText();
+    const name = safeFileName(titleEl ? titleEl.textContent : 'training');
+    downloadTextFile(`${name}.txt`, text);
+  });
+}
+
+
 
 /* ===== payload ===== */
 
@@ -158,6 +225,9 @@ function renderTraining(training) {
   }
 
   const hasDetails = Boolean(training.full_plan);
+
+if (downloadBtn) downloadBtn.disabled = !hasDetails && !training.short_blocks;
+
   detailsContent.textContent = hasDetails ? training.full_plan : '';
   detailsBtn.hidden = !hasDetails;
   trainingDetails.hidden = true;
