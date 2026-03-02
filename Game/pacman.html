@@ -1,1 +1,527 @@
-вот игра
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Mini Pacman</title>
+  <style>
+    html,body{margin:0;height:100%;background:#0b0f1a;color:#e8ecff;font-family:system-ui,Segoe UI,Roboto,Arial}
+    .wrap{display:flex;flex-direction:column;align-items:center;gap:10px;padding:14px}
+    canvas{background:#050712;border:1px solid rgba(255,255,255,.12);border-radius:12px}
+    .hud{display:flex;gap:14px;align-items:center;flex-wrap:wrap;opacity:.92}
+    .kbd{font-family:ui-monospace,Consolas,monospace;background:rgba(255,255,255,.08);padding:2px 8px;border-radius:999px;border:1px solid rgba(255,255,255,.12)}
+    .btn{cursor:pointer;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.08);color:#e8ecff;
+         padding:7px 10px;border-radius:10px}
+    .btn:hover{background:rgba(255,255,255,.12)}
+    .mut{opacity:.7}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hud">
+    <div>Счёт: <b id="score">0</b></div>
+    <div>Жизни: <b id="lives">3</b></div>
+    <div>Режим силы: <b id="power">—</b></div>
+    <div class="mut">Управление: <span class="kbd">←</span><span class="kbd">↑</span><span class="kbd">→</span><span class="kbd">↓</span></div>
+    <button class="btn" id="restart">Рестарт</button>
+  </div>
+  <canvas id="c" width="672" height="480"></canvas>
+  <div class="mut">Цель: съешь все точки. Большие точки дают “силу” на 7 секунд — можно съесть призрака.</div>
+</div>
+
+<script>
+(() => {
+  const canvas = document.getElementById('c');
+  const ctx = canvas.getContext('2d');
+
+  const ui = {
+    score: document.getElementById('score'),
+    lives: document.getElementById('lives'),
+    power: document.getElementById('power'),
+    restart: document.getElementById('restart'),
+  };
+
+  // ====== MAP ======
+  // Legend:
+  // # wall
+  // . pellet
+  // o power pellet
+  // ' ' empty
+  // P pac spawn
+  // G ghost spawn (can be multiple)
+  const MAP = [
+    "############################",
+    "#............##............#",
+    "#.####.#####.##.#####.####.#",
+    "#o####.#####.##.#####.####o#",
+    "#..........................#",
+    "#.####.##.########.##.####.#",
+    "#......##....##....##......#",
+    "######.##### ## #####.######",
+    "######.##          ##.######",
+    "######.## ###GG### ##.######",
+    "######.## #      # ##.######",
+    "      ....#  P   #....      ",
+    "######.## #      # ##.######",
+    "######.## ######## ##.######",
+    "######.##          ##.######",
+    "######.## ######## ##.######",
+    "#............##............#",
+    "#.####.#####.##.#####.####.#",
+    "#...##................##...#",
+    "###.##.##.########.##.##.###",
+    "#......##....##....##......#",
+    "#o##########.##.##########o#",
+    "#..........................#",
+    "############################"
+  ];
+
+  const TILE = 24;
+  const ROWS = MAP.length;
+  const COLS = MAP[0].length;
+
+  // ====== GAME STATE ======
+  let pellets = new Set();      // key "r,c"
+  let powerPellets = new Set(); // key "r,c"
+  let walls = new Set();        // key "r,c"
+  let score = 0;
+  let lives = 3;
+
+  let powerUntil = 0; // timestamp ms
+  let gameOver = false;
+  let win = false;
+
+  const rnd = (a,b)=>Math.random()*(b-a)+a;
+
+  function keyOf(r,c){ return r + "," + c; }
+  function isWall(r,c){ return walls.has(keyOf(r,c)); }
+
+  function resetMap() {
+    pellets.clear();
+    powerPellets.clear();
+    walls.clear();
+
+    pac.x = pac.y = 0;
+    ghosts.length = 0;
+
+    for (let r=0;r<ROWS;r++){
+      for (let c=0;c<COLS;c++){
+        const ch = MAP[r][c];
+        const k = keyOf(r,c);
+        if (ch === '#') walls.add(k);
+        else if (ch === '.') pellets.add(k);
+        else if (ch === 'o') powerPellets.add(k);
+        else if (ch === 'P') { pac.x = c*TILE + TILE/2; pac.y = r*TILE + TILE/2; }
+        else if (ch === 'G') {
+          ghosts.push(makeGhost(c*TILE + TILE/2, r*TILE + TILE/2));
+        }
+      }
+    }
+
+    // if map had no G (just in case)
+    if (ghosts.length === 0) ghosts.push(makeGhost(13*TILE+TILE/2, 11*TILE+TILE/2));
+  }
+
+  // ====== ENTITIES ======
+  const pac = {
+    x: 0, y: 0,
+    r: 9,
+    dir: {x:0,y:0},
+    nextDir: {x:0,y:0},
+    speed: 140, // px/s
+    mouth: 0
+  };
+
+  function makeGhost(x,y){
+    const colors = ["#ff4d4d","#ff7ad9","#61dafb","#ffd166"];
+    return {
+      x, y,
+      r: 9,
+      dir: {x: 1, y: 0},
+      speed: 110 + rnd(-10,20),
+      color: colors[(ghosts.length||0) % colors.length],
+      scared: false,
+      respawn: {x, y},
+      aiTick: 0
+    };
+  }
+
+  const ghosts = [];
+
+  // ====== INPUT ======
+  const DIRS = {
+    ArrowLeft:  {x:-1,y:0},
+    ArrowRight: {x: 1,y:0},
+    ArrowUp:    {x: 0,y:-1},
+    ArrowDown:  {x: 0,y: 1},
+  };
+
+  window.addEventListener('keydown', (e) => {
+    if (DIRS[e.key]) {
+      pac.nextDir = DIRS[e.key];
+      e.preventDefault();
+    }
+    if (e.key === 'r' || e.key === 'R') restart();
+  }, {passive:false});
+
+  ui.restart.onclick = restart;
+
+  // ====== COLLISIONS ======
+  function tileAt(x,y){
+    return {
+      c: Math.floor(x / TILE),
+      r: Math.floor(y / TILE)
+    };
+  }
+
+  function canMoveCircle(x,y,r,dirX,dirY){
+    // Check circle against nearby tiles in direction
+    const nx = x + dirX;
+    const ny = y + dirY;
+
+    const left   = nx - r;
+    const right  = nx + r;
+    const top    = ny - r;
+    const bottom = ny + r;
+
+    const c0 = Math.floor(left / TILE);
+    const c1 = Math.floor(right / TILE);
+    const r0 = Math.floor(top / TILE);
+    const r1 = Math.floor(bottom / TILE);
+
+    for (let rr=r0; rr<=r1; rr++){
+      for (let cc=c0; cc<=c1; cc++){
+        if (rr<0||rr>=ROWS||cc<0||cc>=COLS) {
+          // outside map: treat as wall unless the MAP has spaces there
+          // We'll allow outside only where MAP contains spaces (we have that corridor row).
+          continue;
+        }
+        if (isWall(rr,cc)) {
+          // tile rectangle bounds
+          const tx = cc*TILE, ty = rr*TILE;
+          const tw = TILE, th = TILE;
+          // closest point on rect to circle center
+          const cx = Math.max(tx, Math.min(nx, tx+tw));
+          const cy = Math.max(ty, Math.min(ny, ty+th));
+          const dx = nx - cx;
+          const dy = ny - cy;
+          if (dx*dx + dy*dy < r*r) return false;
+        }
+      }
+    }
+    return true;
+  }
+
+  function dist2(ax,ay,bx,by){ const dx=ax-bx, dy=ay-by; return dx*dx+dy*dy; }
+
+  // ====== GAME LOOP ======
+  let last = performance.now();
+
+  function isPowerActive(now){ return now < powerUntil; }
+
+  function setPower(seconds){
+    powerUntil = performance.now() + seconds*1000;
+  }
+
+  function loseLife(){
+    lives--;
+    ui.lives.textContent = String(lives);
+    if (lives <= 0){
+      gameOver = true;
+      return;
+    }
+    // reset positions only
+    pac.dir = {x:0,y:0};
+    pac.nextDir = {x:0,y:0};
+    // respawn
+    resetMapPositionsOnly();
+  }
+
+  function resetMapPositionsOnly(){
+    // pac & ghosts back to spawns but keep pellets
+    for (let r=0;r<ROWS;r++){
+      for (let c=0;c<COLS;c++){
+        const ch = MAP[r][c];
+        if (ch === 'P') { pac.x = c*TILE + TILE/2; pac.y = r*TILE + TILE/2; }
+      }
+    }
+    ghosts.forEach(g=>{
+      g.x = g.respawn.x;
+      g.y = g.respawn.y;
+      g.dir = {x:1,y:0};
+      g.aiTick = 0;
+    });
+  }
+
+  function restart(){
+    score = 0;
+    lives = 3;
+    powerUntil = 0;
+    gameOver = false;
+    win = false;
+    ui.score.textContent = "0";
+    ui.lives.textContent = "3";
+    ui.power.textContent = "—";
+    resetMap();
+  }
+
+  function step(now){
+    const dt = Math.min(0.04, (now - last)/1000);
+    last = now;
+
+    if (!gameOver && !win){
+      updatePac(dt, now);
+      updateGhosts(dt, now);
+      eatStuff(now);
+      checkGhostCollisions(now);
+      if (pellets.size === 0 && powerPellets.size === 0){
+        win = true;
+      }
+    }
+
+    draw(now);
+    requestAnimationFrame(step);
+  }
+
+  function updatePac(dt, now){
+    const speed = pac.speed * dt;
+
+    // try to turn if nextDir is possible and we're near tile center
+    const t = tileAt(pac.x, pac.y);
+    const cx = t.c*TILE + TILE/2;
+    const cy = t.r*TILE + TILE/2;
+    const nearCenter = Math.abs(pac.x - cx) < 4 && Math.abs(pac.y - cy) < 4;
+
+    if (nearCenter && (pac.nextDir.x !== pac.dir.x || pac.nextDir.y !== pac.dir.y)) {
+      if (canMoveCircle(pac.x, pac.y, pac.r, pac.nextDir.x*1, pac.nextDir.y*1)) {
+        pac.dir = {x: pac.nextDir.x, y: pac.nextDir.y};
+      }
+    }
+
+    // movement
+    const mx = pac.dir.x * speed;
+    const my = pac.dir.y * speed;
+
+    if (pac.dir.x !== 0 || pac.dir.y !== 0){
+      if (canMoveCircle(pac.x, pac.y, pac.r, mx, my)){
+        pac.x += mx; pac.y += my;
+      } else {
+        // stop on wall
+        pac.dir = {x:0,y:0};
+      }
+    }
+
+    // wrap through open space outside map horizontally
+    if (pac.x < -TILE/2) pac.x = canvas.width + TILE/2;
+    if (pac.x > canvas.width + TILE/2) pac.x = -TILE/2;
+
+    pac.mouth = (pac.mouth + dt*10) % (Math.PI*2);
+  }
+
+  function updateGhosts(dt, now){
+    const power = isPowerActive(now);
+    ghosts.forEach((g, idx) => {
+      g.scared = power;
+      const speed = (g.scared ? g.speed*0.85 : g.speed) * dt;
+
+      // basic AI: every 0.25s choose a direction at intersections
+      g.aiTick -= dt;
+      const tt = tileAt(g.x, g.y);
+      const cx = tt.c*TILE + TILE/2;
+      const cy = tt.r*TILE + TILE/2;
+      const nearCenter = Math.abs(g.x - cx) < 4 && Math.abs(g.y - cy) < 4;
+
+      if (nearCenter && g.aiTick <= 0){
+        g.aiTick = 0.25 + rnd(0,0.15);
+
+        const options = [
+          {x:1,y:0},{x:-1,y:0},{x:0,y:1},{x:0,y:-1},
+        ].filter(d => !(d.x === -g.dir.x && d.y === -g.dir.y)); // avoid direct reverse if possible
+
+        const valid = options.filter(d => canMoveCircle(g.x,g.y,g.r, d.x*2, d.y*2));
+        if (valid.length){
+          // choose based on chase/flee
+          let best = valid[0];
+          let bestScore = Infinity;
+
+          for (const d of valid){
+            const nx = g.x + d.x*TILE;
+            const ny = g.y + d.y*TILE;
+            const dd = dist2(nx,ny,pac.x,pac.y);
+
+            // if scared -> maximize distance, else minimize
+            const s = g.scared ? -dd : dd;
+
+            if (s < bestScore){
+              bestScore = s;
+              best = d;
+            }
+          }
+
+          // add a little randomness so ghosts aren't perfect
+          if (Math.random() < 0.15) best = valid[Math.floor(Math.random()*valid.length)];
+
+          g.dir = {x:best.x, y:best.y};
+        } else {
+          // dead end: allow reverse
+          const reverse = {x:-g.dir.x, y:-g.dir.y};
+          if (canMoveCircle(g.x,g.y,g.r, reverse.x*2, reverse.y*2)){
+            g.dir = reverse;
+          }
+        }
+      }
+
+      const mx = g.dir.x * speed;
+      const my = g.dir.y * speed;
+
+      if (canMoveCircle(g.x,g.y,g.r, mx, my)){
+        g.x += mx; g.y += my;
+      } else {
+        // bounce/change
+        g.dir = {x:-g.dir.x, y:-g.dir.y};
+      }
+
+      // wrap
+      if (g.x < -TILE/2) g.x = canvas.width + TILE/2;
+      if (g.x > canvas.width + TILE/2) g.x = -TILE/2;
+    });
+  }
+
+  function eatStuff(now){
+    const t = tileAt(pac.x, pac.y);
+    const k = keyOf(t.r, t.c);
+
+    if (pellets.has(k)){
+      pellets.delete(k);
+      score += 10;
+      ui.score.textContent = String(score);
+    }
+    if (powerPellets.has(k)){
+      powerPellets.delete(k);
+      score += 50;
+      ui.score.textContent = String(score);
+      setPower(7);
+    }
+
+    ui.power.textContent = isPowerActive(now) ? Math.ceil((powerUntil-now)/1000) + "с" : "—";
+  }
+
+  function checkGhostCollisions(now){
+    for (const g of ghosts){
+      const hit = dist2(pac.x,pac.y,g.x,g.y) < (pac.r+g.r)*(pac.r+g.r);
+      if (!hit) continue;
+
+      if (isPowerActive(now)){
+        // eat ghost
+        score += 200;
+        ui.score.textContent = String(score);
+        g.x = g.respawn.x;
+        g.y = g.respawn.y;
+        g.dir = {x:1,y:0};
+        g.aiTick = 0.2;
+      } else {
+        loseLife();
+      }
+      break;
+    }
+  }
+
+  // ====== DRAW ======
+  function draw(now){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+
+    // draw walls
+    for (let r=0;r<ROWS;r++){
+      for (let c=0;c<COLS;c++){
+        if (isWall(r,c)){
+          ctx.fillStyle = "rgba(64,120,255,.18)";
+          ctx.fillRect(c*TILE, r*TILE, TILE, TILE);
+          ctx.strokeStyle = "rgba(64,120,255,.35)";
+          ctx.strokeRect(c*TILE+0.5, r*TILE+0.5, TILE-1, TILE-1);
+        }
+      }
+    }
+
+    // pellets
+    ctx.fillStyle = "rgba(255,255,255,.85)";
+    pellets.forEach(k=>{
+      const [r,c] = k.split(',').map(Number);
+      const x = c*TILE + TILE/2;
+      const y = r*TILE + TILE/2;
+      ctx.beginPath();
+      ctx.arc(x,y,2.2,0,Math.PI*2);
+      ctx.fill();
+    });
+
+    // power pellets
+    ctx.fillStyle = "rgba(255,216,102,.95)";
+    powerPellets.forEach(k=>{
+      const [r,c] = k.split(',').map(Number);
+      const x = c*TILE + TILE/2;
+      const y = r*TILE + TILE/2;
+      ctx.beginPath();
+      ctx.arc(x,y,5.2,0,Math.PI*2);
+      ctx.fill();
+    });
+
+    // ghosts
+    const power = isPowerActive(now);
+    ghosts.forEach(g=>{
+      ctx.fillStyle = power ? "rgba(120,200,255,.95)" : g.color;
+      // body
+      ctx.beginPath();
+      ctx.arc(g.x, g.y, g.r, Math.PI, 0);
+      ctx.lineTo(g.x+g.r, g.y+g.r);
+      // scallops
+      const scallops = 4;
+      for (let i=0;i<scallops;i++){
+        const sx = g.x + g.r - (i+0.5)*(2*g.r/scallops);
+        ctx.quadraticCurveTo(sx, g.y+g.r-3, sx-(2*g.r/scallops)/2, g.y+g.r);
+      }
+      ctx.closePath();
+      ctx.fill();
+
+      // eyes
+      ctx.fillStyle = "rgba(255,255,255,.95)";
+      ctx.beginPath(); ctx.arc(g.x-3, g.y-2, 2.2, 0, Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(g.x+3, g.y-2, 2.2, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = "rgba(0,0,0,.75)";
+      ctx.beginPath(); ctx.arc(g.x-3, g.y-2, 1, 0, Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(g.x+3, g.y-2, 1, 0, Math.PI*2); ctx.fill();
+    });
+
+    // pacman
+    const angle = Math.abs(Math.sin(pac.mouth)) * 0.45;
+    let dirAngle = 0;
+    if (pac.dir.x === 1) dirAngle = 0;
+    else if (pac.dir.x === -1) dirAngle = Math.PI;
+    else if (pac.dir.y === 1) dirAngle = Math.PI/2;
+    else if (pac.dir.y === -1) dirAngle = -Math.PI/2;
+
+    ctx.fillStyle = "rgba(255,217,61,.98)";
+    ctx.beginPath();
+    ctx.moveTo(pac.x, pac.y);
+    ctx.arc(pac.x, pac.y, pac.r, dirAngle + angle, dirAngle + (Math.PI*2 - angle));
+    ctx.closePath();
+    ctx.fill();
+
+    // overlays
+    if (gameOver || win){
+      ctx.fillStyle = "rgba(0,0,0,.55)";
+      ctx.fillRect(0,0,canvas.width,canvas.height);
+      ctx.fillStyle = "rgba(255,255,255,.92)";
+      ctx.font = "700 28px system-ui,Segoe UI,Roboto,Arial";
+      ctx.textAlign = "center";
+      ctx.fillText(win ? "ПОБЕДА! 🎉" : "ИГРА ОКОНЧЕНА", canvas.width/2, canvas.height/2 - 10);
+      ctx.font = "500 16px system-ui,Segoe UI,Roboto,Arial";
+      ctx.fillText("Нажми R или кнопку «Рестарт»", canvas.width/2, canvas.height/2 + 18);
+    }
+  }
+
+  // init
+  restart();
+  requestAnimationFrame(step);
+})();
+</script>
+</body>
+</html>
