@@ -25,7 +25,7 @@
     <div class="mut">Управление: <span class="kbd">←</span><span class="kbd">↑</span><span class="kbd">→</span><span class="kbd">↓</span></div>
     <button class="btn" id="restart">Рестарт</button>
   </div>
-  <canvas id="c" width="672" height="480"></canvas>
+  <canvas id="c" width="672" height="980"></canvas>
   <div class="mut">Цель: съешь все точки. Большие точки дают “силу” на 7 секунд — можно съесть призрака.</div>
 </div>
 
@@ -222,11 +222,9 @@
     };
   }
 
-  function snapToGrid(entity, tolerance = 6){
-    const center = tileCenter(entity.x, entity.y);
-    if (Math.abs(entity.x - center.x) < tolerance) entity.x = center.x;
-    if (Math.abs(entity.y - center.y) < tolerance) entity.y = center.y;
-    return center;
+  function snapToLane(entity, dir, center, tolerance = 6){
+    if (dir.x !== 0 && Math.abs(entity.y - center.y) < tolerance) entity.y = center.y;
+    if (dir.y !== 0 && Math.abs(entity.x - center.x) < tolerance) entity.x = center.x;
   }
 
   function isAlignedForDir(entity, dir, center, tolerance = 6){
@@ -308,8 +306,8 @@
     const speed = pac.speed * dt;
 
     // Keep Pacman centered on the corridor lane so turns stay reliable.
-    const center = snapToGrid(pac);
-    const nearCenter = pac.x === center.x && pac.y === center.y;
+    const center = tileCenter(pac.x, pac.y);
+    const nearCenter = Math.abs(pac.x - center.x) < 4 && Math.abs(pac.y - center.y) < 4;
     const stopped = pac.dir.x === 0 && pac.dir.y === 0;
     const wantsTurn = pac.nextDir.x !== pac.dir.x || pac.nextDir.y !== pac.dir.y;
     const canTurnFromStop = stopped && isAlignedForDir(pac, pac.nextDir, center);
@@ -322,8 +320,7 @@
       }
     }
 
-    if (pac.dir.x !== 0) pac.y = center.y;
-    if (pac.dir.y !== 0) pac.x = center.x;
+    snapToLane(pac, pac.dir, center);
 
     // movement
     const mx = pac.dir.x * speed;
