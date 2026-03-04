@@ -214,6 +214,27 @@
 
   function dist2(ax,ay,bx,by){ const dx=ax-bx, dy=ay-by; return dx*dx+dy*dy; }
 
+  function tileCenter(x,y){
+    const t = tileAt(x, y);
+    return {
+      x: t.c*TILE + TILE/2,
+      y: t.r*TILE + TILE/2
+    };
+  }
+
+  function snapToGrid(entity, tolerance = 6){
+    const center = tileCenter(entity.x, entity.y);
+    if (Math.abs(entity.x - center.x) < tolerance) entity.x = center.x;
+    if (Math.abs(entity.y - center.y) < tolerance) entity.y = center.y;
+    return center;
+  }
+
+  function isAlignedForDir(entity, dir, center, tolerance = 6){
+    if (dir.x !== 0) return Math.abs(entity.y - center.y) < tolerance;
+    if (dir.y !== 0) return Math.abs(entity.x - center.x) < tolerance;
+    return false;
+  }
+
   // ====== GAME LOOP ======
   let last = performance.now();
 
@@ -286,17 +307,23 @@
   function updatePac(dt, now){
     const speed = pac.speed * dt;
 
-    // try to turn if nextDir is possible and we're near tile center
-    const t = tileAt(pac.x, pac.y);
-    const cx = t.c*TILE + TILE/2;
-    const cy = t.r*TILE + TILE/2;
-    const nearCenter = Math.abs(pac.x - cx) < 4 && Math.abs(pac.y - cy) < 4;
+    // Keep Pacman centered on the corridor lane so turns stay reliable.
+    const center = snapToGrid(pac);
+    const nearCenter = pac.x === center.x && pac.y === center.y;
+    const stopped = pac.dir.x === 0 && pac.dir.y === 0;
+    const wantsTurn = pac.nextDir.x !== pac.dir.x || pac.nextDir.y !== pac.dir.y;
+    const canTurnFromStop = stopped && isAlignedForDir(pac, pac.nextDir, center);
 
-    if (nearCenter && (pac.nextDir.x !== pac.dir.x || pac.nextDir.y !== pac.dir.y)) {
+    if ((nearCenter || canTurnFromStop) && wantsTurn) {
       if (canMoveCircle(pac.x, pac.y, pac.r, pac.nextDir.x*1, pac.nextDir.y*1)) {
+        if (pac.nextDir.x !== 0) pac.y = center.y;
+        if (pac.nextDir.y !== 0) pac.x = center.x;
         pac.dir = {x: pac.nextDir.x, y: pac.nextDir.y};
       }
     }
+
+    if (pac.dir.x !== 0) pac.y = center.y;
+    if (pac.dir.y !== 0) pac.x = center.x;
 
     // movement
     const mx = pac.dir.x * speed;
