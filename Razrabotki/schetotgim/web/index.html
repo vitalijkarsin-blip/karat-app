@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pushup Counter</title>
+  <style>
+    :root {
+      --bg-top: #132238;
+      --bg-bottom: #061018;
+      --panel: rgba(10, 24, 36, 0.82);
+      --line: rgba(255, 255, 255, 0.1);
+      --text: #f5f7fb;
+      --muted: #9eb0be;
+      --green: #64f0a8;
+      --red: #ff896b;
+      --blue: #85d7ff;
+      --shadow: 0 24px 64px rgba(0, 0, 0, 0.35);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Segoe UI", "Trebuchet MS", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(900px 500px at 0% 0%, rgba(76, 160, 255, 0.22), transparent 60%),
+        radial-gradient(800px 420px at 100% 100%, rgba(100, 240, 168, 0.16), transparent 60%),
+        linear-gradient(160deg, var(--bg-top), var(--bg-bottom));
+      display: grid;
+      place-items: center;
+      padding: 20px;
+    }
+
+    .shell {
+      width: min(760px, 100%);
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 26px;
+      padding: 24px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 22px;
+      flex-wrap: wrap;
+    }
+
+    .title {
+      margin: 0;
+      font-size: clamp(30px, 5vw, 46px);
+      line-height: 1;
+      letter-spacing: 0.02em;
+    }
+
+    .subtitle {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 15px;
+    }
+
+    .badge {
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: rgba(133, 215, 255, 0.12);
+      border: 1px solid rgba(133, 215, 255, 0.2);
+      color: var(--blue);
+      font-size: 14px;
+      white-space: nowrap;
+    }
+
+    .hero {
+      display: grid;
+      gap: 18px;
+      grid-template-columns: minmax(0, 1.2fr) minmax(260px, 0.8fr);
+    }
+
+    .count-card,
+    .info-card {
+      border-radius: 22px;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.03);
+      padding: 22px;
+    }
+
+    .count-label {
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      color: var(--muted);
+    }
+
+    .count {
+      font-size: clamp(144px, 36vw, 300px);
+      line-height: 0.95;
+      font-weight: 800;
+      margin: 12px 0 10px;
+      text-shadow: 0 10px 40px rgba(0, 0, 0, 0.28);
+    }
+
+    .status {
+      color: var(--muted);
+      font-size: 15px;
+    }
+
+    .actions {
+      margin-top: 22px;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 14px;
+    }
+
+    button {
+      border: 0;
+      border-radius: 18px;
+      min-height: 72px;
+      font-size: 20px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: transform 0.08s ease, filter 0.18s ease, opacity 0.18s ease;
+    }
+
+    button:hover {
+      filter: brightness(1.05);
+    }
+
+    button:active {
+      transform: translateY(1px) scale(0.995);
+    }
+
+    button:disabled {
+      opacity: 0.65;
+      cursor: wait;
+    }
+
+    .reset {
+      background: linear-gradient(135deg, var(--red), #ff6d7f);
+      color: #2b0904;
+      box-shadow: 0 16px 30px rgba(255, 109, 127, 0.22);
+    }
+
+    .meta {
+      display: grid;
+      gap: 12px;
+    }
+
+    .meta-row {
+      padding: 14px 16px;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--line);
+    }
+
+    .meta-key {
+      color: var(--muted);
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      margin-bottom: 6px;
+    }
+
+    .meta-value {
+      font-size: 20px;
+      font-weight: 700;
+      word-break: break-word;
+    }
+
+    .footer {
+      margin-top: 18px;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    @media (max-width: 720px) {
+      .shell {
+        padding: 18px;
+        border-radius: 22px;
+      }
+
+      .hero {
+        grid-template-columns: 1fr;
+      }
+
+      .actions {
+        grid-template-columns: 1fr;
+      }
+
+      button {
+        min-height: 64px;
+        font-size: 18px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <div class="topbar">
+      <div>
+        <h1 class="title">Pushup Counter</h1>
+        <div class="subtitle">Счётчик на ESP32 по Wi-Fi без Bluetooth-приложений.</div>
+      </div>
+      <div class="badge" id="badge">Wi-Fi control</div>
+    </div>
+
+    <section class="hero">
+      <div class="count-card">
+        <div class="count-label">Текущий счёт</div>
+        <div class="count" id="count">0</div>
+        <div class="status" id="status">Подключено к устройству</div>
+
+        <div class="actions">
+          <button class="reset" id="resetBtn">Сбросить</button>
+        </div>
+      </div>
+
+      <aside class="info-card">
+        <div class="meta">
+          <div class="meta-row">
+            <div class="meta-key">Точка доступа</div>
+            <div class="meta-value" id="ssid">...</div>
+          </div>
+          <div class="meta-row">
+            <div class="meta-key">Адрес</div>
+            <div class="meta-value" id="ip">...</div>
+          </div>
+          <div class="meta-row">
+            <div class="meta-key">Обновление</div>
+            <div class="meta-value">Авто каждые 500 мс</div>
+          </div>
+        </div>
+      </aside>
+    </section>
+
+    <div class="footer">
+      Подключись к Wi-Fi устройства, затем открой этот адрес в браузере. Аппаратные кнопки на самом устройстве продолжают работать.
+    </div>
+  </main>
+
+  <script>
+    const countEl = document.getElementById("count");
+    const statusEl = document.getElementById("status");
+    const ssidEl = document.getElementById("ssid");
+    const ipEl = document.getElementById("ip");
+    const badgeEl = document.getElementById("badge");
+    const resetBtn = document.getElementById("resetBtn");
+
+    let busy = false;
+
+    function setBusy(nextBusy) {
+      busy = nextBusy;
+      resetBtn.disabled = nextBusy;
+    }
+
+    async function refreshState() {
+      try {
+        const response = await fetch("/api/state", { cache: "no-store" });
+        if (!response.ok) {
+          throw new Error("HTTP " + response.status);
+        }
+
+        const state = await response.json();
+        countEl.textContent = String(state.count);
+        ssidEl.textContent = state.ssid;
+        ipEl.textContent = state.ip;
+        statusEl.textContent = "Устройство на связи";
+        badgeEl.textContent = "Wi-Fi control";
+      } catch (error) {
+        statusEl.textContent = "Нет связи: " + error.message;
+        badgeEl.textContent = "Offline";
+      }
+    }
+
+    async function sendAction(path) {
+      if (busy) {
+        return;
+      }
+
+      try {
+        setBusy(true);
+        const response = await fetch(path, {
+          method: "POST",
+          cache: "no-store"
+        });
+
+        if (!response.ok) {
+          throw new Error("HTTP " + response.status);
+        }
+
+        await refreshState();
+      } catch (error) {
+        statusEl.textContent = "Ошибка: " + error.message;
+      } finally {
+        setBusy(false);
+      }
+    }
+
+    resetBtn.addEventListener("click", () => sendAction("/api/reset"));
+
+    refreshState();
+    setInterval(refreshState, 500);
+  </script>
+</body>
+</html>

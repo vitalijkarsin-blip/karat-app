@@ -1,197 +1,324 @@
 #include <Arduino.h>
 #include <Wire.h>
 #include <Preferences.h>
-#include <BLEDevice.h>
-#include <BLEServer.h>
-#include <BLEUtils.h>
-#include <BLE2902.h>
+#include <WiFi.h>
+#include <WebServer.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
+#include <TM1637Display.h>
 
-static const uint8_t PIN_PLUS = 18;
-static const uint8_t PIN_RESET = 19;
+#include "web_ui.h"
 
-static const unsigned long DEBOUNCE_MS = 50;
-static const unsigned long ANTI_MULTICLICK_MS = 250;
-static const unsigned long RESET_HOLD_MS = 2000;
+static const uint8_t PIN_PLUS = 18;   // button/switch +1 -> GND
+static const uint8_t PIN_RESET = 19;  // reset button -> GND
+
+static const uint8_t OLED_SDA = 21;
+static const uint8_t OLED_SCL = 22;
+static const uint8_t OLED_ADDR_1 = 0x3C;
+static const uint8_t OLED_ADDR_2 = 0x3D;
+
+static const uint8_t TM_CLK = 16;
+static const uint8_t TM_DIO = 17;
+
+static const unsigned long DEBOUNCE_MS = 30;
+static const unsigned long ANTI_MULTICLICK_MS = 150;
+static const unsigned long HOLD_MS = 2000;
 
 static const uint8_t SCREEN_WIDTH = 128;
 static const uint8_t SCREEN_HEIGHT = 64;
-static const uint8_t OLED_RESET = 255;
-static const uint8_t OLED_ADDR = 0x3C;
+static const int8_t OLED_RESET = -1;
 
-static const char *BLE_DEVICE_NAME = "PUSHUP-COUNTER";
-static const char *SERVICE_UUID = "6E400001-B5A3-F393-E0A9-E50E24DCCA9E";
-static const char *CHAR_UUID = "6E400003-B5A3-F393-E0A9-E50E24DCCA9E";
+static const char *WIFI_AP_SSID = "PUSHUP-COUNTER";
+static const char *WIFI_AP_PASSWORD = "";
+static const char *WIFI_AP_LABEL = "AP:PUSHUP";
+static const IPAddress WIFI_AP_IP(192, 168, 4, 2);
+static const IPAddress WIFI_AP_GATEWAY(192, 168, 4, 2);
+static const IPAddress WIFI_AP_SUBNET(255, 255, 255, 0);
 
 struct ButtonState {
   uint8_t pin;
   bool stableLevel;
-  bool lastSampledLevel;
-  unsigned long lastSampleChangeMs;
+  bool lastSampled;
+  unsigned long lastChangeMs;
   unsigned long pressedSinceMs;
   bool holdHandled;
 };
 
-Preferences prefs;
-Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
-BLECharacteristic *countCharacteristic = nullptr;
+static Preferences prefs;
+static WebServer server(80);
+static uint32_t countValue = 0;
+static unsigned long lastCountAcceptedMs = 0;
 
-uint32_t pushupCount = 0;
-unsigned long lastCountAcceptedMs = 0;
-bool oledReady = false;
+static ButtonState btnPlus { PIN_PLUS, true, true, 0, 0, false };
 
-ButtonState plusBtn = {PIN_PLUS, HIGH, HIGH, 0, 0, false};
-ButtonState resetBtn = {PIN_RESET, HIGH, HIGH, 0, 0, false};
+// Dedicated reset-button state.
+static bool stableLevel = HIGH;  // INPUT_PULLUP: HIGH = released
+static bool lastSampled = HIGH;
+static unsigned long lastChangeMs = 0;
+static unsigned long pressedSinceMs = 0;
+static bool holdHandled = false;
 
-void loadCount() {
-  prefs.begin("pushup", false);
-  pushupCount = prefs.getULong("count", 0);
+static Adafruit_SSD1306 oled(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+static TM1637Display tm(TM_CLK, TM_DIO);
+static bool oledReady = false;
+static uint8_t oledAddrUsed = 0;
+static String wifiIpText = "0.0.0.0";
+
+static void applyCountAndSync();
+
+static bool i2cDevicePresent(uint8_t addr) {
+  Wire.beginTransmission(addr);
+  return Wire.endTransmission() == 0;
 }
 
-void saveCount() {
-  prefs.putULong("count", pushupCount);
-}
-
-void notifyCountBle() {
-  if (countCharacteristic == nullptr) {
-    return;
+static bool initOLEDAtAddress(uint8_t addr) {
+  if (!i2cDevicePresent(addr)) {
+    return false;
   }
-  String payload = String(pushupCount);
-  countCharacteristic->setValue(payload.c_str());
-  countCharacteristic->notify();
+  if (!oled.begin(SSD1306_SWITCHCAPVCC, addr)) {
+    return false;
+  }
+  oledReady = true;
+  oledAddrUsed = addr;
+  return true;
 }
 
-void drawDisplay() {
+static void drawOLED() {
   if (!oledReady) {
     return;
   }
 
-  display.clearDisplay();
-  display.setTextColor(SSD1306_WHITE);
+  oled.clearDisplay();
+  oled.setTextColor(SSD1306_WHITE);
 
-  display.setTextSize(1);
-  display.setCursor(0, 0);
-  display.print("COUNT:");
+  oled.setTextSize(1);
+  oled.setCursor(0, 0);
+  oled.print(WIFI_AP_LABEL);
 
-  String countText = String(pushupCount);
-  int16_t x1, y1;
-  uint16_t w, h;
-  display.setTextSize(4);
-  display.getTextBounds(countText, 0, 0, &x1, &y1, &w, &h);
-  int16_t x = (SCREEN_WIDTH - static_cast<int16_t>(w)) / 2;
-  if (x < 0) {
-    x = 0;
-  }
-  display.setCursor(x, 16);
-  display.print(countText);
+  oled.setTextSize(3);
+  oled.setCursor(0, 14);
+  oled.print(countValue);
 
-  display.setTextSize(1);
-  display.setCursor(0, 56);
-  display.print("BLE: ON");
+  oled.setTextSize(1);
+  oled.setCursor(0, 52);
+  oled.print(wifiIpText);
 
-  display.display();
+  oled.display();
 }
 
-void setupBle() {
-  BLEDevice::init(BLE_DEVICE_NAME);
-  BLEServer *server = BLEDevice::createServer();
-  BLEService *service = server->createService(SERVICE_UUID);
-
-  countCharacteristic = service->createCharacteristic(
-      CHAR_UUID,
-      BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_NOTIFY);
-  countCharacteristic->addDescriptor(new BLE2902());
-
-  String initialValue = String(pushupCount);
-  countCharacteristic->setValue(initialValue.c_str());
-
-  service->start();
-  BLEAdvertising *advertising = BLEDevice::getAdvertising();
-  advertising->addServiceUUID(SERVICE_UUID);
-  advertising->setScanResponse(false);
-  advertising->start();
+static void drawTM() {
+  uint16_t v = static_cast<uint16_t>(countValue % 10000);
+  tm.showNumberDec(v, true);
 }
 
-void initButton(ButtonState &btn, unsigned long nowMs) {
-  bool level = digitalRead(btn.pin);
-  btn.stableLevel = level;
-  btn.lastSampledLevel = level;
-  btn.lastSampleChangeMs = nowMs;
-  btn.pressedSinceMs = (level == LOW) ? nowMs : 0;
-  btn.holdHandled = false;
+static void renderDisplay() {
+  drawTM();
+  drawOLED();
 }
 
-bool updateButtonPressedEdge(ButtonState &btn, unsigned long nowMs) {
-  bool sampled = digitalRead(btn.pin);
+static void initDisplays() {
+  oledReady = false;
+  oledAddrUsed = 0;
 
-  if (sampled != btn.lastSampledLevel) {
-    btn.lastSampledLevel = sampled;
-    btn.lastSampleChangeMs = nowMs;
+  Wire.begin(OLED_SDA, OLED_SCL);
+  if (!initOLEDAtAddress(OLED_ADDR_1) && !initOLEDAtAddress(OLED_ADDR_2)) {
+    Wire.begin();
+    initOLEDAtAddress(OLED_ADDR_1) || initOLEDAtAddress(OLED_ADDR_2);
   }
 
-  bool pressedEdge = false;
+  tm.setBrightness(7, true);
+  tm.clear();
 
-  if ((nowMs - btn.lastSampleChangeMs) >= DEBOUNCE_MS && sampled != btn.stableLevel) {
-    btn.stableLevel = sampled;
-    if (btn.stableLevel == LOW) {
-      pressedEdge = true;
-      btn.pressedSinceMs = nowMs;
-      btn.holdHandled = false;
-    } else {
-      btn.pressedSinceMs = 0;
-      btn.holdHandled = false;
+  if (oledReady) {
+    Serial.printf("OLED: OK at 0x%02X\r\n", oledAddrUsed);
+  } else {
+    Serial.println("OLED: not found");
+  }
+  Serial.printf("TM1637: CLK=%u DIO=%u\r\n", TM_CLK, TM_DIO);
+}
+
+static void saveCount() {
+  prefs.putULong("count", static_cast<unsigned long>(countValue));
+}
+
+static void applyCountAndSync() {
+  saveCount();
+  renderDisplay();
+}
+
+static void resetCountValue() {
+  countValue = 0;
+  applyCountAndSync();
+}
+
+static void incrementCountValue() {
+  countValue++;
+  applyCountAndSync();
+}
+
+static void setupResetButton() {
+  pinMode(PIN_RESET, INPUT_PULLUP);
+  bool s = digitalRead(PIN_RESET);
+  stableLevel = s;
+  lastSampled = s;
+  lastChangeMs = millis();
+}
+
+static void tickResetButton(unsigned long now) {
+  bool sampled = digitalRead(PIN_RESET);
+
+  if (sampled != lastSampled) {
+    lastSampled = sampled;
+    lastChangeMs = now;
+  }
+
+  if ((now - lastChangeMs) >= DEBOUNCE_MS && stableLevel != lastSampled) {
+    stableLevel = lastSampled;
+
+    if (stableLevel == LOW) {
+      pressedSinceMs = now;
+      holdHandled = false;
     }
   }
 
-  return pressedEdge;
+  if (stableLevel == LOW && !holdHandled && (now - pressedSinceMs >= HOLD_MS)) {
+    holdHandled = true;
+    resetCountValue();
+  }
+
+  if (stableLevel == HIGH) {
+    holdHandled = false;
+  }
 }
 
-void applyCountChange() {
-  saveCount();
-  drawDisplay();
-  notifyCountBle();
+static bool updateButton(ButtonState &b) {
+  bool sampled = (digitalRead(b.pin) != LOW);
+  unsigned long now = millis();
+
+  if (sampled != b.lastSampled) {
+    b.lastSampled = sampled;
+    b.lastChangeMs = now;
+  }
+
+  if ((now - b.lastChangeMs) >= DEBOUNCE_MS && b.stableLevel != b.lastSampled) {
+    b.stableLevel = b.lastSampled;
+    if (!b.stableLevel) {
+      b.pressedSinceMs = now;
+      b.holdHandled = false;
+    }
+    return true;
+  }
+  return false;
+}
+
+static bool isPressed(const ButtonState &b) {
+  return b.stableLevel == false;
+}
+
+static void sendStateJson() {
+  char json[160];
+  snprintf(
+    json,
+    sizeof(json),
+    "{\"count\":%lu,\"ssid\":\"%s\",\"ip\":\"%s\"}",
+    static_cast<unsigned long>(countValue),
+    WIFI_AP_SSID,
+    wifiIpText.c_str()
+  );
+
+  server.sendHeader("Cache-Control", "no-store, no-cache, must-revalidate");
+  server.send(200, "application/json; charset=utf-8", json);
+}
+
+static void setupHttpServer() {
+  server.on("/", HTTP_GET, []() {
+    server.sendHeader("Cache-Control", "no-store, no-cache, must-revalidate");
+    server.send_P(200, "text/html; charset=utf-8", INDEX_HTML);
+  });
+
+  server.on("/api/state", HTTP_GET, []() {
+    sendStateJson();
+  });
+
+  server.on("/api/inc", HTTP_POST, []() {
+    incrementCountValue();
+    sendStateJson();
+  });
+
+  server.on("/api/reset", HTTP_POST, []() {
+    resetCountValue();
+    sendStateJson();
+  });
+
+  server.on("/favicon.ico", HTTP_GET, []() {
+    server.send(204);
+  });
+
+  server.onNotFound([]() {
+    server.send(404, "text/plain; charset=utf-8", "Not found");
+  });
+
+  server.begin();
+  Serial.println("HTTP: server started");
+}
+
+static void setupWiFi() {
+  WiFi.mode(WIFI_AP);
+  WiFi.setSleep(false);
+  WiFi.softAPConfig(WIFI_AP_IP, WIFI_AP_GATEWAY, WIFI_AP_SUBNET);
+
+  bool apOk = false;
+  if (WIFI_AP_PASSWORD[0] == '\0') {
+    apOk = WiFi.softAP(WIFI_AP_SSID);
+  } else {
+    apOk = WiFi.softAP(WIFI_AP_SSID, WIFI_AP_PASSWORD);
+  }
+
+  wifiIpText = WiFi.softAPIP().toString();
+  Serial.printf("WiFi AP: %s\r\n", apOk ? "OK" : "FAIL");
+  Serial.printf("SSID: %s\r\n", WIFI_AP_SSID);
+  Serial.printf("Open: http://%s\r\n", wifiIpText.c_str());
 }
 
 void setup() {
-  Serial.begin(115200);
-
   pinMode(PIN_PLUS, INPUT_PULLUP);
-  pinMode(PIN_RESET, INPUT_PULLUP);
 
-  unsigned long nowMs = millis();
-  initButton(plusBtn, nowMs);
-  initButton(resetBtn, nowMs);
+  Serial.begin(115200);
+  delay(250);
+  Serial.println("Boot...");
 
-  loadCount();
+  prefs.begin("pushup", false);
+  countValue = prefs.getULong("count", 0);
 
-  Wire.begin();
-  oledReady = display.begin(SSD1306_SWITCHCAPVCC, OLED_ADDR);
-  if (!oledReady) {
-    Serial.println("OLED init failed");
-  }
-  drawDisplay();
+  btnPlus.stableLevel = (digitalRead(btnPlus.pin) != LOW);
+  btnPlus.lastSampled = btnPlus.stableLevel;
+  btnPlus.lastChangeMs = millis();
+  btnPlus.pressedSinceMs = isPressed(btnPlus) ? millis() : 0;
 
-  setupBle();
+  setupResetButton();
+  setupWiFi();
+  initDisplays();
+  renderDisplay();
+  setupHttpServer();
 }
 
 void loop() {
-  unsigned long nowMs = millis();
+  unsigned long now = millis();
 
-  bool plusPressed = updateButtonPressedEdge(plusBtn, nowMs);
-  updateButtonPressedEdge(resetBtn, nowMs);
+  server.handleClient();
 
-  if (plusPressed && (nowMs - lastCountAcceptedMs) >= ANTI_MULTICLICK_MS) {
-    pushupCount++;
-    lastCountAcceptedMs = nowMs;
-    applyCountChange();
-  }
+  updateButton(btnPlus);
+  tickResetButton(now);
 
-  if (resetBtn.stableLevel == LOW && !resetBtn.holdHandled && resetBtn.pressedSinceMs != 0 &&
-      (nowMs - resetBtn.pressedSinceMs) >= RESET_HOLD_MS) {
-    pushupCount = 0;
-    resetBtn.holdHandled = true;
-    applyCountChange();
+  static bool plusWasPressed = false;
+  if (isPressed(btnPlus)) {
+    plusWasPressed = true;
+  } else if (plusWasPressed) {
+    plusWasPressed = false;
+    if (now - lastCountAcceptedMs >= ANTI_MULTICLICK_MS) {
+      lastCountAcceptedMs = now;
+      incrementCountValue();
+    }
   }
 
   delay(5);
