@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Цвет удачи</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: radial-gradient(circle at top, #2b3a67, #101322 70%);
+      color: #fff;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .game {
+      width: min(1100px, 96vw);
+      min-height: 700px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 28px;
+      padding: 24px;
+      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.35);
+      backdrop-filter: blur(12px);
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 34px;
+      letter-spacing: 0.5px;
+    }
+
+    .status {
+      background: rgba(0, 0, 0, 0.28);
+      border-radius: 16px;
+      padding: 12px 16px;
+      min-width: 300px;
+      text-align: center;
+      font-weight: 700;
+    }
+
+    .table {
+      display: grid;
+      grid-template-rows: 150px 1fr 190px;
+      gap: 18px;
+    }
+
+    .zone {
+      background: rgba(0, 0, 0, 0.18);
+      border-radius: 22px;
+      padding: 16px;
+    }
+
+    .zone-title {
+      margin-bottom: 10px;
+      font-size: 15px;
+      opacity: 0.85;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .computer-hand,
+    .player-hand {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .center {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 34px;
+      min-height: 210px;
+    }
+
+    .deck-area,
+    .discard-area {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .card {
+      width: 82px;
+      height: 120px;
+      border-radius: 16px;
+      border: 3px solid rgba(255, 255, 255, 0.8);
+      color: #fff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 30px;
+      font-weight: 900;
+      cursor: pointer;
+      user-select: none;
+      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.28);
+      position: relative;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .card:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 18px 34px rgba(0, 0, 0, 0.35);
+    }
+
+    .card.disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      filter: grayscale(0.35);
+    }
+
+    .card.disabled:hover {
+      transform: none;
+    }
+
+    .red { background: linear-gradient(135deg, #ff4747, #b30000); }
+    .blue { background: linear-gradient(135deg, #3d9cff, #004ca8); }
+    .green { background: linear-gradient(135deg, #2ecc71, #087a35); }
+    .yellow { background: linear-gradient(135deg, #ffd93d, #b68a00); color: #2b2500; }
+    .wild { background: conic-gradient(#ff4747, #ffd93d, #2ecc71, #3d9cff, #ff4747); }
+
+    .back {
+      background: linear-gradient(135deg, #24243e, #302b63, #0f0c29);
+      border-color: rgba(255, 255, 255, 0.55);
+      cursor: default;
+    }
+
+    .deck-button {
+      border: 0;
+      padding: 12px 18px;
+      border-radius: 14px;
+      font-weight: 800;
+      cursor: pointer;
+      color: #111827;
+      background: #fff;
+      box-shadow: 0 8px 18px rgba(0, 0, 0, 0.22);
+    }
+
+    .deck-button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .small-note {
+      font-size: 13px;
+      opacity: 0.75;
+      text-align: center;
+    }
+
+    .controls {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+    }
+
+    .restart {
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      background: rgba(255, 255, 255, 0.12);
+      color: #fff;
+      padding: 10px 14px;
+      border-radius: 12px;
+      cursor: pointer;
+      font-weight: 700;
+    }
+
+    .color-picker {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.65);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+    }
+
+    .color-picker.active {
+      display: flex;
+    }
+
+    .picker-box {
+      width: min(420px, 92vw);
+      background: #151a2c;
+      border-radius: 24px;
+      padding: 24px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      text-align: center;
+      box-shadow: 0 24px 70px rgba(0, 0, 0, 0.45);
+    }
+
+    .picker-box h2 {
+      margin-top: 0;
+    }
+
+    .picker-buttons {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .picker-buttons button {
+      border: 0;
+      padding: 18px;
+      border-radius: 16px;
+      color: #fff;
+      font-weight: 900;
+      cursor: pointer;
+      font-size: 18px;
+    }
+
+    .picker-buttons .yellow-btn {
+      color: #2b2500;
+    }
+
+    .winner {
+      font-size: 18px;
+      color: #ffe58a;
+    }
+  </style>
+</head>
+<body>
+  <main class="game">
+    <header>
+      <div>
+        <h1>🎨 Цвет удачи</h1>
+        <div class="small-note">Версия 0.1 — игрок против компьютера</div>
+      </div>
+      <div class="status" id="status">Загрузка игры...</div>
+      <div class="controls">
+        <button class="restart" onclick="startGame()">Новая игра</button>
+        <button class="restart" id="lastCardButton" onclick="declareLastCard()">Цвет удачи!</button>
+      </div>
+    </header>
+
+    <section class="table">
+      <div class="zone">
+        <div class="zone-title">
+          <span>Компьютер</span>
+          <span id="computerCount">0 карт</span>
+        </div>
+        <div class="computer-hand" id="computerHand"></div>
+      </div>
+
+      <div class="zone center">
+        <div class="deck-area">
+          <div class="card back">?</div>
+          <button class="deck-button" id="drawButton" onclick="drawPlayerCard()">Взять карту</button>
+          <div class="small-note" id="deckCount">Колода: 0</div>
+        </div>
+
+        <div class="discard-area">
+          <div id="discardCard"></div>
+          <div class="small-note" id="activeColorText">Текущий цвет: —</div>
+        </div>
+      </div>
+
+      <div class="zone">
+        <div class="zone-title">
+          <span>Твои карты</span>
+          <span id="playerCount">0 карт</span>
+        </div>
+        <div class="player-hand" id="playerHand"></div>
+      </div>
+    </section>
+  </main>
+
+  <div class="color-picker" id="colorPicker">
+    <div class="picker-box">
+      <h2>Выбери цвет</h2>
+      <p>Эта карта меняет текущий цвет игры.</p>
+      <div class="picker-buttons">
+        <button class="red" onclick="chooseWildColor('red')">Красный</button>
+        <button class="blue" onclick="chooseWildColor('blue')">Синий</button>
+        <button class="green" onclick="chooseWildColor('green')">Зелёный</button>
+        <button class="yellow yellow-btn" onclick="chooseWildColor('yellow')">Жёлтый</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const colors = ['red', 'blue', 'green', 'yellow'];
+    const colorNames = {
+      red: 'красный',
+      blue: 'синий',
+      green: 'зелёный',
+      yellow: 'жёлтый'
+    };
+
+    let deck = [];
+    let discardPile = [];
+    let playerHand = [];
+    let computerHand = [];
+    let activeColor = null;
+    let playerTurn = true;
+    let gameOver = false;
+    let pendingWildCard = null;
+    let playerDeclaredLastCard = false;
+
+    function createDeck() {
+      const newDeck = [];
+
+      for (const color of colors) {
+        for (let number = 0; number <= 9; number++) {
+          newDeck.push({ color, value: String(number), type: 'number' });
+          if (number !== 0) {
+            newDeck.push({ color, value: String(number), type: 'number' });
+          }
+        }
+
+        for (let i = 0; i < 2; i++) {
+          newDeck.push({ color, value: '+2', type: 'draw2' });
+          newDeck.push({ color, value: '⛔', type: 'skip' });
+        }
+      }
+
+      for (let i = 0; i < 4; i++) {
+        newDeck.push({ color: 'wild', value: '★', type: 'wild' });
+        newDeck.push({ color: 'wild', value: '+4', type: 'wild4' });
+      }
+
+      return shuffle(newDeck);
+    }
+
+    function shuffle(array) {
+      const result = [...array];
+      for (let i = result.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [result[i], result[j]] = [result[j], result[i]];
+      }
+      return result;
+    }
+
+    function startGame() {
+      deck = createDeck();
+      discardPile = [];
+      playerHand = [];
+      computerHand = [];
+      activeColor = null;
+      playerTurn = true;
+      gameOver = false;
+      pendingWildCard = null;
+      playerDeclaredLastCard = false;
+      closeColorPicker();
+
+      for (let i = 0; i < 7; i++) {
+        playerHand.push(drawFromDeck());
+        computerHand.push(drawFromDeck());
+      }
+
+      let firstCard = drawFromDeck();
+      while (firstCard.color === 'wild') {
+        deck.push(firstCard);
+        deck = shuffle(deck);
+        firstCard = drawFromDeck();
+      }
+
+      discardPile.push(firstCard);
+      activeColor = firstCard.color;
+      applyCardEffect(firstCard, 'start');
+      render();
+      setStatus('Твой ход. Положи карту по цвету или значению.');
+    }
+
+    function drawFromDeck() {
+      if (deck.length === 0) {
+        refillDeck();
+      }
+      return deck.pop();
+    }
+
+    function refillDeck() {
+      if (discardPile.length <= 1) return;
+      const topCard = discardPile.pop();
+      deck = shuffle(discardPile);
+      discardPile = [topCard];
+    }
+
+    function getTopCard() {
+      return discardPile[discardPile.length - 1];
+    }
+
+    function canPlay(card) {
+      const topCard = getTopCard();
+      return (
+        card.color === 'wild' ||
+        card.color === activeColor ||
+        card.value === topCard.value
+      );
+    }
+
+    function playPlayerCard(index) {
+      if (!playerTurn || gameOver) return;
+
+      const card = playerHand[index];
+
+      if (!canPlay(card)) {
+        setStatus('Эту карту сейчас положить нельзя.');
+        return;
+      }
+
+      if (playerHand.length === 1 && !playerDeclaredLastCard) {
+        playerHand.push(drawFromDeck(), drawFromDeck());
+        playerDeclaredLastCard = false;
+        playerTurn = false;
+        setStatus('Штраф! Перед последней картой нужно нажать «Цвет удачи!». Ты берёшь 2 карты.');
+        render();
+        setTimeout(computerMove, 750);
+        return;
+      }
+
+      playerHand.splice(index, 1);
+      discardPile.push(card);
+
+      if (card.color === 'wild') {
+        pendingWildCard = card;
+        render();
+        openColorPicker();
+        return;
+      }
+
+      activeColor = card.color;
+      finishPlayerMove(card);
+    }
+
+    function chooseWildColor(color) {
+      if (!pendingWildCard) return;
+      activeColor = color;
+      closeColorPicker();
+      const card = pendingWildCard;
+      pendingWildCard = null;
+      finishPlayerMove(card);
+    }
+
+    function finishPlayerMove(card) {
+      applyCardEffect(card, 'player');
+
+      if (playerHand.length !== 1) {
+        playerDeclaredLastCard = false;
+      }
+
+      if (checkWinner()) return;
+
+      render();
+
+      if (card.type === 'skip' || card.type === 'draw2' || card.type === 'wild4') {
+        playerTurn = true;
+        setStatus('Компьютер пропускает ход. Снова твой ход.');
+        render();
+        return;
+      }
+
+      playerTurn = false;
+      setStatus('Ход компьютера...');
+      render();
+      setTimeout(computerMove, 750);
+    }
+
+    function drawPlayerCard() {
+      if (!playerTurn || gameOver) return;
+      const card = drawFromDeck();
+      if (card) playerHand.push(card);
+      playerDeclaredLastCard = false;
+      setStatus('Ты взял карту. Ход компьютера.');
+      playerTurn = false;
+      render();
+      setTimeout(computerMove, 750);
+    }
+
+    function computerMove() {
+      if (gameOver) return;
+
+      const playableIndex = computerHand.findIndex(canPlay);
+
+      if (playableIndex === -1) {
+        const card = drawFromDeck();
+        if (card) computerHand.push(card);
+        if (playerHand.length !== 1) playerDeclaredLastCard = false;
+        setStatus('Компьютер взял карту. Твой ход.');
+        playerTurn = true;
+        render();
+        return;
+      }
+
+      const card = computerHand.splice(playableIndex, 1)[0];
+      discardPile.push(card);
+
+      if (card.color === 'wild') {
+        activeColor = chooseComputerColor();
+      } else {
+        activeColor = card.color;
+      }
+
+      applyCardEffect(card, 'computer');
+      if (playerHand.length !== 1) playerDeclaredLastCard = false;
+
+      if (checkWinner()) return;
+
+      if (card.type === 'skip' || card.type === 'draw2' || card.type === 'wild4') {
+        playerTurn = false;
+        setStatus('Компьютер положил спецкарту и ходит ещё раз.');
+        render();
+        setTimeout(computerMove, 900);
+        return;
+      }
+
+      playerTurn = true;
+      setStatus('Твой ход.');
+      render();
+    }
+
+    function chooseComputerColor() {
+      const count = { red: 0, blue: 0, green: 0, yellow: 0 };
+      for (const card of computerHand) {
+        if (count[card.color] !== undefined) count[card.color]++;
+      }
+      return Object.entries(count).sort((a, b) => b[1] - a[1])[0][0];
+    }
+
+    function applyCardEffect(card, playedBy) {
+      if (playedBy === 'start') return;
+
+      if (card.type === 'draw2') {
+        const targetHand = playedBy === 'player' ? computerHand : playerHand;
+        targetHand.push(drawFromDeck(), drawFromDeck());
+      }
+
+      if (card.type === 'wild4') {
+        const targetHand = playedBy === 'player' ? computerHand : playerHand;
+        targetHand.push(drawFromDeck(), drawFromDeck(), drawFromDeck(), drawFromDeck());
+      }
+    }
+
+    function declareLastCard() {
+      if (gameOver) return;
+
+      if (playerHand.length !== 1) {
+        setStatus('«Цвет удачи!» нажимается только когда у тебя осталась 1 карта.');
+        return;
+      }
+
+      playerDeclaredLastCard = true;
+      setStatus('Принято! «Цвет удачи!» засчитан. Можно играть последнюю карту.');
+      render();
+    }
+
+    function checkWinner() {
+      if (playerHand.length === 0) {
+        gameOver = true;
+        setStatus('🏆 Ты победил! Цвет удачи сегодня твой!');
+        render();
+        return true;
+      }
+
+      if (computerHand.length === 0) {
+        gameOver = true;
+        setStatus('Компьютер победил. Реванш?');
+        render();
+        return true;
+      }
+
+      return false;
+    }
+
+    function render() {
+      renderComputerHand();
+      renderPlayerHand();
+      renderDiscardCard();
+
+      document.getElementById('playerCount').textContent = `${playerHand.length} карт`;
+      document.getElementById('computerCount').textContent = `${computerHand.length} карт`;
+      document.getElementById('deckCount').textContent = `Колода: ${deck.length}`;
+      document.getElementById('activeColorText').textContent = `Текущий цвет: ${colorNames[activeColor] || '—'}`;
+      document.getElementById('drawButton').disabled = !playerTurn || gameOver;
+      document.getElementById('lastCardButton').disabled = gameOver || playerHand.length !== 1 || playerDeclaredLastCard;
+    }
+
+    function renderComputerHand() {
+      const container = document.getElementById('computerHand');
+      container.innerHTML = '';
+      computerHand.forEach(() => {
+        const card = document.createElement('div');
+        card.className = 'card back';
+        card.textContent = '?';
+        container.appendChild(card);
+      });
+    }
+
+    function renderPlayerHand() {
+      const container = document.getElementById('playerHand');
+      container.innerHTML = '';
+
+      playerHand.forEach((cardData, index) => {
+        const card = createCardElement(cardData);
+        if (!playerTurn || gameOver || !canPlay(cardData)) {
+          card.classList.add('disabled');
+        }
+        card.onclick = () => playPlayerCard(index);
+        container.appendChild(card);
+      });
+    }
+
+    function renderDiscardCard() {
+      const container = document.getElementById('discardCard');
+      container.innerHTML = '';
+      container.appendChild(createCardElement(getTopCard()));
+    }
+
+    function createCardElement(cardData) {
+      const card = document.createElement('div');
+      card.className = `card ${cardData.color}`;
+      card.textContent = cardData.value;
+      return card;
+    }
+
+    function setStatus(text) {
+      document.getElementById('status').textContent = text;
+    }
+
+    function openColorPicker() {
+      document.getElementById('colorPicker').classList.add('active');
+    }
+
+    function closeColorPicker() {
+      document.getElementById('colorPicker').classList.remove('active');
+    }
+
+    startGame();
+  </script>
+</body>
+</html>

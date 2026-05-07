@@ -1,0 +1,1421 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Дурак</title>
+  <style>
+    :root {
+      --bg-deep: #04110d;
+      --bg-felt: #0f3a2f;
+      --bg-felt-2: #175342;
+      --panel: rgba(9, 24, 20, 0.7);
+      --panel-soft: rgba(255, 255, 255, 0.08);
+      --line: rgba(255, 255, 255, 0.16);
+      --text: #f4f0e2;
+      --muted: rgba(244, 240, 226, 0.7);
+      --accent: #f1c66d;
+      --accent-2: #c97c2e;
+      --danger: #c74c4c;
+      --card-bg: #fbf8ee;
+      --card-back: #304f8f;
+      --card-ink: #1d1a15;
+      --card-red: #b93b3b;
+      --shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--text);
+      font-family: "Trebuchet MS", "Gill Sans", sans-serif;
+      background:
+        radial-gradient(circle at top, rgba(52, 132, 104, 0.45), transparent 36%),
+        radial-gradient(circle at bottom, rgba(241, 198, 109, 0.12), transparent 28%),
+        linear-gradient(160deg, var(--bg-felt-2), var(--bg-felt) 48%, var(--bg-deep));
+      display: flex;
+      justify-content: center;
+      align-items: stretch;
+      padding: 12px;
+    }
+
+    .app {
+      width: min(1320px, 100%);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .topbar,
+    .panel,
+    .battlefield,
+    .player-zone,
+    .opponent-zone {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr auto;
+      gap: 16px;
+      padding: 16px 18px;
+      border-radius: 28px;
+      align-items: center;
+    }
+
+    .eyebrow {
+      margin: 0 0 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.22em;
+      font-size: 11px;
+      color: var(--accent);
+    }
+
+    h1 {
+      margin: 0;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: clamp(34px, 5vw, 52px);
+      line-height: 0.95;
+      letter-spacing: 0.02em;
+    }
+
+    .subtitle {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 15px;
+    }
+
+    .status-box {
+      min-height: 112px;
+      padding: 16px 18px;
+      border-radius: 22px;
+      border: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(0, 0, 0, 0.14));
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .status-text {
+      font-size: 18px;
+      font-weight: 700;
+      line-height: 1.35;
+    }
+
+    .meta-text {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+
+    .btn {
+      border: 0;
+      border-radius: 14px;
+      padding: 12px 16px;
+      cursor: pointer;
+      font: inherit;
+      font-weight: 800;
+      color: #23190d;
+      background: linear-gradient(180deg, #f6d592, #d8a24f);
+      box-shadow: 0 10px 18px rgba(0, 0, 0, 0.2);
+      transition: transform 0.15s ease, filter 0.15s ease, opacity 0.15s ease;
+    }
+
+    .btn:hover:not(:disabled) {
+      transform: translateY(-2px);
+      filter: brightness(1.03);
+    }
+
+    .btn.secondary {
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+    }
+
+    .btn.danger {
+      background: linear-gradient(180deg, #f0a4a4, #c65b5b);
+      color: #2e0c0c;
+    }
+
+    .btn:disabled {
+      cursor: not-allowed;
+      opacity: 0.45;
+      transform: none;
+      filter: none;
+    }
+
+    .board {
+      display: grid;
+      grid-template-rows: auto minmax(260px, 1fr) auto;
+      gap: 12px;
+    }
+
+    .opponent-zone,
+    .player-zone {
+      border-radius: 28px;
+      padding: 14px 16px;
+    }
+
+    .zone-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+
+    .zone-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 20px;
+      font-weight: 800;
+    }
+
+    .role-badge,
+    .count-badge {
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .role-badge {
+      background: rgba(241, 198, 109, 0.2);
+      color: var(--accent);
+      border: 1px solid rgba(241, 198, 109, 0.3);
+    }
+
+    .count-badge {
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--muted);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    .hand {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: flex-end;
+      min-height: 118px;
+    }
+
+    .board-middle {
+      display: grid;
+      grid-template-columns: 240px minmax(0, 1fr) 290px;
+      gap: 12px;
+    }
+
+    .panel {
+      border-radius: 28px;
+      padding: 14px;
+    }
+
+    .stock-panel {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 14px;
+    }
+
+    .stock-top {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      min-height: 148px;
+    }
+
+    .deck-stack {
+      position: relative;
+      width: 84px;
+      height: 120px;
+    }
+
+    .deck-stack::before,
+    .deck-stack::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: 18px;
+      border: 2px solid rgba(255, 255, 255, 0.18);
+      background: rgba(255, 255, 255, 0.08);
+      transform: translate(4px, 4px);
+    }
+
+    .deck-stack::after {
+      transform: translate(8px, 8px);
+      opacity: 0.7;
+    }
+
+    .stack-count {
+      text-align: center;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .battlefield {
+      border-radius: 32px;
+      padding: 14px 16px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .battlefield::before {
+      content: "";
+      position: absolute;
+      inset: 10px;
+      border-radius: 28px;
+      border: 1px dashed rgba(255, 255, 255, 0.08);
+      pointer-events: none;
+    }
+
+    .battle-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+
+    .battle-title {
+      font-size: 20px;
+      font-weight: 800;
+    }
+
+    .battle-subtitle {
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .table-cards {
+      min-height: 180px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      align-items: flex-start;
+    }
+
+    .table-slot {
+      width: 102px;
+      min-height: 162px;
+      position: relative;
+    }
+
+    .table-slot .card + .card {
+      position: absolute;
+      top: 38px;
+      left: 18px;
+    }
+
+    .empty-battle {
+      width: 100%;
+      min-height: 180px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      color: var(--muted);
+      padding: 20px;
+      font-size: 16px;
+    }
+
+    .side-note {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .note-box {
+      border-radius: 22px;
+      padding: 16px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .note-box h2 {
+      margin: 0 0 10px;
+      font-size: 18px;
+    }
+
+    .note-box p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .card {
+      width: 84px;
+      height: 120px;
+      border-radius: 18px;
+      border: 2px solid rgba(0, 0, 0, 0.14);
+      background: linear-gradient(180deg, #ffffff, var(--card-bg));
+      color: var(--card-ink);
+      position: relative;
+      box-shadow: 0 12px 20px rgba(0, 0, 0, 0.22);
+      flex: 0 0 auto;
+      transition: transform 0.14s ease, box-shadow 0.14s ease, border-color 0.14s ease, opacity 0.14s ease;
+    }
+
+    button.card {
+      cursor: pointer;
+      padding: 0;
+    }
+
+    button.card:hover:not(:disabled) {
+      transform: translateY(-8px);
+      box-shadow: 0 18px 26px rgba(0, 0, 0, 0.28);
+    }
+
+    .card.red {
+      color: var(--card-red);
+    }
+
+    .card.trump {
+      border-color: rgba(201, 124, 46, 0.72);
+      box-shadow: 0 12px 26px rgba(201, 124, 46, 0.18);
+    }
+
+    .card.disabled {
+      opacity: 0.48;
+      cursor: not-allowed;
+      filter: grayscale(0.18);
+      transform: none;
+    }
+
+    .card.compact {
+      width: 76px;
+      height: 108px;
+    }
+
+    .card-rank {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      font-size: 25px;
+      font-weight: 900;
+      line-height: 1;
+    }
+
+    .card-suit {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 38px;
+      font-weight: 900;
+    }
+
+    .card-mini {
+      position: absolute;
+      right: 10px;
+      bottom: 10px;
+      font-size: 18px;
+      font-weight: 800;
+      transform: rotate(180deg);
+      line-height: 1;
+    }
+
+    .card.back {
+      color: #edf3ff;
+      border-color: rgba(255, 255, 255, 0.2);
+      background:
+        radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.14), transparent 30%),
+        repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.12) 6px, transparent 6px, transparent 12px),
+        linear-gradient(135deg, #314d92, #1c2f64);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 18px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+    }
+
+    .stock-meta {
+      display: grid;
+      gap: 12px;
+    }
+
+    .meta-pill {
+      border-radius: 18px;
+      padding: 12px 14px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    .meta-label {
+      color: var(--muted);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 4px;
+    }
+
+    .meta-value {
+      font-size: 16px;
+      font-weight: 800;
+    }
+
+    .footer-note {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+      margin-top: 8px;
+    }
+
+    @media (max-width: 1100px) {
+      .topbar {
+        grid-template-columns: 1fr;
+      }
+
+      .controls {
+        justify-content: flex-start;
+      }
+
+      .board-middle {
+        grid-template-columns: 1fr;
+      }
+
+      .stock-panel {
+        order: 1;
+      }
+
+      .battlefield {
+        order: 2;
+      }
+
+      .side-note {
+        order: 3;
+      }
+    }
+
+    @media (max-width: 720px) {
+      body {
+        padding: 10px;
+      }
+
+      .topbar,
+      .opponent-zone,
+      .player-zone,
+      .panel,
+      .battlefield {
+        border-radius: 22px;
+      }
+
+      .table-slot {
+        width: 100px;
+      }
+
+      .table-slot .card + .card {
+        left: 16px;
+      }
+
+      .card {
+        width: 82px;
+        height: 118px;
+      }
+
+      .card.compact {
+        width: 76px;
+        height: 108px;
+      }
+
+      .card-rank {
+        font-size: 24px;
+      }
+
+      .card-suit {
+        font-size: 40px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <section class="topbar">
+      <div>
+        <p class="eyebrow">Карточная игра</p>
+        <h1>Дурак</h1>
+        <p class="subtitle">Подкидной режим: игрок против компьютера</p>
+      </div>
+
+      <div class="status-box">
+        <div class="status-text" id="statusText">Загрузка...</div>
+        <div class="meta-text" id="metaText"></div>
+      </div>
+
+      <div class="controls">
+        <button class="btn danger" id="takeButton" type="button">Взять</button>
+        <button class="btn" id="doneButton" type="button">Бито</button>
+        <button class="btn secondary" id="restartButton" type="button">Новая игра</button>
+      </div>
+    </section>
+
+    <section class="board">
+      <section class="opponent-zone">
+        <div class="zone-head">
+          <div class="zone-title">
+            <span>Компьютер</span>
+            <span class="role-badge" id="botRole">Ожидание</span>
+          </div>
+          <span class="count-badge" id="botCount">0 карт</span>
+        </div>
+        <div class="hand" id="botHand"></div>
+      </section>
+
+      <section class="board-middle">
+        <aside class="panel stock-panel">
+          <div class="stock-top">
+            <div>
+              <div class="deck-stack" id="deckStack"></div>
+              <div class="stack-count" id="deckCount">Колода: 0</div>
+            </div>
+            <div id="trumpCard"></div>
+          </div>
+
+          <div class="stock-meta">
+            <div class="meta-pill">
+              <div class="meta-label">Козырь</div>
+              <div class="meta-value" id="trumpText">-</div>
+            </div>
+            <div class="meta-pill">
+              <div class="meta-label">Сброс</div>
+              <div class="meta-value" id="discardCount">0 карт</div>
+            </div>
+            <div class="meta-pill">
+              <div class="meta-label">Раунд</div>
+              <div class="meta-value" id="roundLimit">До 0 карт</div>
+            </div>
+          </div>
+        </aside>
+
+        <section class="battlefield">
+          <div class="battle-head">
+            <div>
+              <div class="battle-title">Стол</div>
+              <div class="battle-subtitle">Атака и отбой собираются по парам</div>
+            </div>
+            <div class="count-badge" id="tableCount">0 карт на столе</div>
+          </div>
+          <div class="table-cards" id="tableCards"></div>
+        </section>
+
+        <aside class="side-note">
+          <div class="note-box">
+            <h2>Последнее действие</h2>
+            <p id="actionLog">Новая партия готовится.</p>
+          </div>
+          <div class="note-box">
+            <h2>Как играть</h2>
+            <p>
+              Кликайте по своим картам. При защите нужно побить последнюю открытую карту на столе
+              или нажать «Взять». После отбоя нажмите «Бито», если больше не хотите подкидывать.
+            </p>
+          </div>
+        </aside>
+      </section>
+
+      <section class="player-zone">
+        <div class="zone-head">
+          <div class="zone-title">
+            <span>Вы</span>
+            <span class="role-badge" id="playerRole">Ожидание</span>
+          </div>
+          <span class="count-badge" id="playerCount">0 карт</span>
+        </div>
+        <div class="hand" id="playerHand"></div>
+        <div class="footer-note">
+          В этой версии защита идёт по последней открытой атакующей карте. Этого достаточно для рабочего MVP.
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <script>
+    (() => {
+      const SUITS = [
+        { key: "spades", symbol: "♠", name: "Пики" },
+        { key: "hearts", symbol: "♥", name: "Червы" },
+        { key: "diamonds", symbol: "♦", name: "Бубны" },
+        { key: "clubs", symbol: "♣", name: "Трефы" },
+      ];
+
+      const SUIT_ORDER = {
+        spades: 0,
+        hearts: 1,
+        diamonds: 2,
+        clubs: 3,
+      };
+
+      const RANKS = ["6", "7", "8", "9", "10", "J", "Q", "K", "A"];
+
+      const ui = {
+        statusText: document.getElementById("statusText"),
+        metaText: document.getElementById("metaText"),
+        takeButton: document.getElementById("takeButton"),
+        doneButton: document.getElementById("doneButton"),
+        restartButton: document.getElementById("restartButton"),
+        botHand: document.getElementById("botHand"),
+        playerHand: document.getElementById("playerHand"),
+        botCount: document.getElementById("botCount"),
+        playerCount: document.getElementById("playerCount"),
+        botRole: document.getElementById("botRole"),
+        playerRole: document.getElementById("playerRole"),
+        deckCount: document.getElementById("deckCount"),
+        trumpCard: document.getElementById("trumpCard"),
+        trumpText: document.getElementById("trumpText"),
+        discardCount: document.getElementById("discardCount"),
+        roundLimit: document.getElementById("roundLimit"),
+        tableCards: document.getElementById("tableCards"),
+        tableCount: document.getElementById("tableCount"),
+        actionLog: document.getElementById("actionLog"),
+      };
+
+      const state = {
+        deck: [],
+        trumpSuit: "",
+        trumpCard: null,
+        playerHand: [],
+        botHand: [],
+        table: [],
+        discard: [],
+        attacker: "player",
+        defender: "bot",
+        phase: "attack",
+        roundLimit: 0,
+        processing: false,
+        winner: "",
+        lastAction: "",
+      };
+
+      function other(side) {
+        return side === "player" ? "bot" : "player";
+      }
+
+      function getHand(side) {
+        return side === "player" ? state.playerHand : state.botHand;
+      }
+
+      function pause(ms) {
+        return new Promise((resolve) => window.setTimeout(resolve, ms));
+      }
+
+      function isRed(card) {
+        return card.suit === "hearts" || card.suit === "diamonds";
+      }
+
+      function cardText(card) {
+        return card ? `${card.rank}${card.symbol}` : "";
+      }
+
+      function sideText(side) {
+        return side === "player" ? "Вы" : "Компьютер";
+      }
+
+      function buildDeck() {
+        let id = 0;
+        const deck = [];
+
+        for (const suit of SUITS) {
+          for (let value = 0; value < RANKS.length; value += 1) {
+            deck.push({
+              id: `card-${id}`,
+              suit: suit.key,
+              symbol: suit.symbol,
+              suitName: suit.name,
+              rank: RANKS[value],
+              value,
+            });
+            id += 1;
+          }
+        }
+
+        return deck;
+      }
+
+      function shuffle(list) {
+        for (let i = list.length - 1; i > 0; i -= 1) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [list[i], list[j]] = [list[j], list[i]];
+        }
+      }
+
+      function sortHand(hand) {
+        hand.sort((a, b) => {
+          const aTrump = a.suit === state.trumpSuit ? 1 : 0;
+          const bTrump = b.suit === state.trumpSuit ? 1 : 0;
+
+          if (aTrump !== bTrump) {
+            return aTrump - bTrump;
+          }
+
+          if (a.value !== b.value) {
+            return a.value - b.value;
+          }
+
+          return SUIT_ORDER[a.suit] - SUIT_ORDER[b.suit];
+        });
+      }
+
+      function syncHands() {
+        sortHand(state.playerHand);
+        sortHand(state.botHand);
+      }
+
+      function drawToHand(side) {
+        if (!state.deck.length) {
+          return;
+        }
+        getHand(side).push(state.deck.shift());
+      }
+
+      function refillHands() {
+        for (const side of [state.attacker, state.defender]) {
+          while (getHand(side).length < 6 && state.deck.length) {
+            drawToHand(side);
+          }
+        }
+        syncHands();
+      }
+
+      function getLowestTrump(hand) {
+        return hand
+          .filter((card) => card.suit === state.trumpSuit)
+          .sort((a, b) => a.value - b.value)[0] || null;
+      }
+
+      function determineFirstAttacker() {
+        const playerTrump = getLowestTrump(state.playerHand);
+        const botTrump = getLowestTrump(state.botHand);
+
+        if (playerTrump && botTrump) {
+          return playerTrump.value <= botTrump.value ? "player" : "bot";
+        }
+        if (playerTrump) {
+          return "player";
+        }
+        if (botTrump) {
+          return "bot";
+        }
+        return Math.random() < 0.5 ? "player" : "bot";
+      }
+
+      function getTableRanks() {
+        const ranks = new Set();
+        for (const slot of state.table) {
+          ranks.add(slot.attack.rank);
+          if (slot.defense) {
+            ranks.add(slot.defense.rank);
+          }
+        }
+        return ranks;
+      }
+
+      function getOpenSlot() {
+        for (let i = state.table.length - 1; i >= 0; i -= 1) {
+          if (!state.table[i].defense) {
+            return state.table[i];
+          }
+        }
+        return null;
+      }
+
+      function allDefended() {
+        return state.table.length > 0 && state.table.every((slot) => slot.defense);
+      }
+
+      function removeCard(side, cardId) {
+        const hand = getHand(side);
+        const index = hand.findIndex((card) => card.id === cardId);
+        if (index === -1) {
+          return null;
+        }
+        return hand.splice(index, 1)[0];
+      }
+
+      function beats(defenseCard, attackCard) {
+        if (defenseCard.suit === attackCard.suit && defenseCard.value > attackCard.value) {
+          return true;
+        }
+        return defenseCard.suit === state.trumpSuit && attackCard.suit !== state.trumpSuit;
+      }
+
+      function canAttackCard(card) {
+        if (state.table.length >= state.roundLimit) {
+          return false;
+        }
+
+        if (state.table.length === 0) {
+          return state.phase === "attack";
+        }
+
+        return getTableRanks().has(card.rank);
+      }
+
+      function canDefendCard(card) {
+        if (state.phase !== "defense") {
+          return false;
+        }
+        const slot = getOpenSlot();
+        if (!slot) {
+          return false;
+        }
+        return beats(card, slot.attack);
+      }
+
+      function pickAttackCard(cards) {
+        return cards.slice().sort((a, b) => {
+          const aWeight = (a.suit === state.trumpSuit ? 100 : 0) + a.value * 4 + SUIT_ORDER[a.suit];
+          const bWeight = (b.suit === state.trumpSuit ? 100 : 0) + b.value * 4 + SUIT_ORDER[b.suit];
+          return aWeight - bWeight;
+        })[0];
+      }
+
+      function pickDefenseCard(attackCard) {
+        return state.botHand
+          .filter((card) => beats(card, attackCard))
+          .sort((a, b) => {
+            const aWeight = (a.suit === state.trumpSuit && attackCard.suit !== state.trumpSuit ? 80 : 0) + a.value * 4 + SUIT_ORDER[a.suit];
+            const bWeight = (b.suit === state.trumpSuit && attackCard.suit !== state.trumpSuit ? 80 : 0) + b.value * 4 + SUIT_ORDER[b.suit];
+            return aWeight - bWeight;
+          })[0] || null;
+      }
+
+      function setRoundLimit() {
+        state.roundLimit = Math.min(6, getHand(state.defender).length);
+      }
+
+      function collectTableCards() {
+        const cards = [];
+        for (const slot of state.table) {
+          cards.push(slot.attack);
+          if (slot.defense) {
+            cards.push(slot.defense);
+          }
+        }
+        return cards;
+      }
+
+      function playAttack(side, cardId) {
+        const card = removeCard(side, cardId);
+        if (!card) {
+          return;
+        }
+
+        state.table.push({ attack: card, defense: null });
+        state.phase = "defense";
+        state.lastAction = `${sideText(side)} атакует картой ${cardText(card)}.`;
+        syncHands();
+      }
+
+      function throwInCard(side, cardId) {
+        const card = removeCard(side, cardId);
+        if (!card) {
+          return;
+        }
+
+        state.table.push({ attack: card, defense: null });
+        state.lastAction = `${sideText(side)} подкинул ${cardText(card)}.`;
+        syncHands();
+      }
+
+      function defend(side, cardId) {
+        const slot = getOpenSlot();
+        const card = removeCard(side, cardId);
+        if (!slot || !card) {
+          return;
+        }
+
+        slot.defense = card;
+        state.phase = "attack";
+        state.lastAction = `${sideText(side)} отбился картой ${cardText(card)}.`;
+        syncHands();
+      }
+
+      function finishSuccessfulDefense() {
+        if (!allDefended()) {
+          return;
+        }
+
+        const cards = collectTableCards();
+        state.discard.push(...cards);
+        state.table = [];
+        state.lastAction = "Все карты побиты. Раунд уходит в сброс.";
+        refillHands();
+
+        const nextAttacker = state.defender;
+        state.defender = state.attacker;
+        state.attacker = nextAttacker;
+        state.phase = "attack";
+        setRoundLimit();
+
+        if (!checkWinner()) {
+          uiState();
+        }
+      }
+
+      function finishTakeRound() {
+        const collected = collectTableCards();
+        getHand(state.defender).push(...collected);
+        state.table = [];
+        state.lastAction = `${sideText(state.defender)} забирает карты со стола.`;
+        refillHands();
+        state.phase = "attack";
+        setRoundLimit();
+
+        if (!checkWinner()) {
+          uiState();
+        }
+      }
+
+      function checkWinner() {
+        if (state.deck.length > 0) {
+          return false;
+        }
+
+        const playerEmpty = state.playerHand.length === 0;
+        const botEmpty = state.botHand.length === 0;
+
+        if (!playerEmpty && !botEmpty) {
+          return false;
+        }
+
+        state.phase = "gameover";
+
+        if (playerEmpty && botEmpty) {
+          state.winner = "Ничья.";
+          state.lastAction = "Оба игрока остались без карт.";
+        } else if (playerEmpty) {
+          state.winner = "Вы победили.";
+          state.lastAction = "У вас закончились карты раньше компьютера.";
+        } else {
+          state.winner = "Победил компьютер.";
+          state.lastAction = "Компьютер первым избавился от всех карт.";
+        }
+
+        return true;
+      }
+
+      function uiState() {
+        syncHands();
+        render();
+      }
+
+      function botWantsToContinue(validCards) {
+        const defenderCards = getHand(state.defender).length;
+        if (state.table.length < 2) {
+          return true;
+        }
+        if (state.table.length >= state.roundLimit) {
+          return false;
+        }
+        if (defenderCards <= 2 || state.deck.length === 0) {
+          return true;
+        }
+        return validCards.some((card) => card.suit !== state.trumpSuit) && state.table.length < 3;
+      }
+
+      function botAttackAction() {
+        const validCards = state.botHand.filter((card) => canAttackCard(card));
+
+        if (state.table.length > 0) {
+          const defenderOutOfCards = getHand(state.defender).length === 0;
+          if (defenderOutOfCards || state.table.length >= state.roundLimit || !validCards.length) {
+            finishSuccessfulDefense();
+            return;
+          }
+
+          if (!botWantsToContinue(validCards)) {
+            finishSuccessfulDefense();
+            return;
+          }
+        }
+
+        if (!validCards.length) {
+          return;
+        }
+
+        const chosen = pickAttackCard(validCards);
+        playAttack("bot", chosen.id);
+      }
+
+      function botDefenseAction() {
+        const slot = getOpenSlot();
+        if (!slot) {
+          return;
+        }
+
+        const chosen = pickDefenseCard(slot.attack);
+        if (!chosen) {
+          state.phase = "throwin";
+          state.lastAction = "Компьютер не смог отбиться и будет брать.";
+          return;
+        }
+
+        defend("bot", chosen.id);
+      }
+
+      function botThrowInAction() {
+        const validCards = state.botHand.filter((card) => canAttackCard(card));
+        const shouldStop = !validCards.length || state.table.length >= state.roundLimit || state.table.length >= 4;
+
+        if (shouldStop) {
+          finishTakeRound();
+          return;
+        }
+
+        const chosen = pickAttackCard(validCards);
+        throwInCard("bot", chosen.id);
+      }
+
+      function getAutoAction() {
+        if (state.phase === "gameover") {
+          return null;
+        }
+
+        if (state.phase === "attack" && state.attacker === "bot") {
+          return botAttackAction;
+        }
+
+        if (state.phase === "defense" && state.defender === "bot") {
+          return botDefenseAction;
+        }
+
+        if (state.phase === "throwin" && state.attacker === "bot") {
+          return botThrowInAction;
+        }
+
+        return null;
+      }
+
+      async function runAutoFlow() {
+        if (state.processing || state.phase === "gameover") {
+          return;
+        }
+
+        state.processing = true;
+        render();
+
+        try {
+          for (let i = 0; i < 40; i += 1) {
+            const action = getAutoAction();
+            if (!action) {
+              break;
+            }
+
+            await pause(520);
+            action();
+            render();
+          }
+        } finally {
+          state.processing = false;
+          render();
+        }
+      }
+
+      function handActionEnabled(card) {
+        if (state.processing || state.phase === "gameover") {
+          return false;
+        }
+
+        if (state.phase === "attack" && state.attacker === "player") {
+          return canAttackCard(card);
+        }
+
+        if (state.phase === "defense" && state.defender === "player") {
+          return canDefendCard(card);
+        }
+
+        if (state.phase === "throwin" && state.attacker === "player") {
+          return canAttackCard(card);
+        }
+
+        return false;
+      }
+
+      function createCardNode(card, options = {}) {
+        const { hidden = false, compact = false, disabled = false, clickable = false } = options;
+        const element = document.createElement(clickable ? "button" : "div");
+        element.className = "card";
+
+        if (compact) {
+          element.classList.add("compact");
+        }
+        if (hidden) {
+          element.classList.add("back");
+          element.textContent = "DURAK";
+          return element;
+        }
+        if (isRed(card)) {
+          element.classList.add("red");
+        }
+        if (card.suit === state.trumpSuit) {
+          element.classList.add("trump");
+        }
+        if (disabled) {
+          element.classList.add("disabled");
+        }
+
+        if (clickable) {
+          element.type = "button";
+          element.disabled = disabled;
+        }
+
+        element.innerHTML = `
+          <span class="card-rank">${card.rank}</span>
+          <span class="card-suit">${card.symbol}</span>
+          <span class="card-mini">${card.rank}${card.symbol}</span>
+        `;
+
+        return element;
+      }
+
+      function renderStatus() {
+        if (state.phase === "gameover") {
+          ui.statusText.textContent = state.winner;
+          ui.metaText.textContent = `Колода пуста. ${state.lastAction}`;
+          return;
+        }
+
+        const openSlot = getOpenSlot();
+        let text = "";
+
+        if (state.phase === "attack") {
+          if (state.attacker === "player") {
+            text = state.table.length === 0
+              ? "Ваш ход. Выберите карту для первой атаки."
+              : "Ваш ход. Можно подкинуть карту подходящего достоинства или закончить раунд.";
+          } else {
+            text = "Компьютер думает, чем атаковать дальше.";
+          }
+        } else if (state.phase === "defense") {
+          if (state.defender === "player") {
+            text = `Нужно отбиться от ${cardText(openSlot.attack)} или нажать «Взять».`;
+          } else {
+            text = `Компьютер отбивается от ${cardText(openSlot.attack)}.`;
+          }
+        } else if (state.phase === "throwin") {
+          if (state.attacker === "player") {
+            text = "Компьютер берёт. Можете подкинуть ещё карты того же достоинства.";
+          } else {
+            text = "Вы берёте. Компьютер решает, что ещё подкинуть.";
+          }
+        }
+
+        ui.statusText.textContent = text;
+        ui.metaText.textContent = `Атакует: ${sideText(state.attacker)}. Защищается: ${sideText(state.defender)}.`;
+      }
+
+      function renderRoles() {
+        const playerRole = state.phase === "gameover"
+          ? "Финиш"
+          : (state.attacker === "player" ? "Атака" : state.defender === "player" ? "Защита" : "Ожидание");
+
+        const botRole = state.phase === "gameover"
+          ? "Финиш"
+          : (state.attacker === "bot" ? "Атака" : state.defender === "bot" ? "Защита" : "Ожидание");
+
+        ui.playerRole.textContent = playerRole;
+        ui.botRole.textContent = botRole;
+      }
+
+      function renderBotHand() {
+        ui.botHand.innerHTML = "";
+        state.botHand.forEach((_, index) => {
+          const back = createCardNode(null, { hidden: true, compact: index > 5 });
+          ui.botHand.appendChild(back);
+        });
+      }
+
+      function renderPlayerHand() {
+        ui.playerHand.innerHTML = "";
+
+        for (const card of state.playerHand) {
+          const enabled = handActionEnabled(card);
+          const button = createCardNode(card, {
+            clickable: true,
+            disabled: !enabled,
+          });
+
+          button.addEventListener("click", () => {
+            if (state.processing || state.phase === "gameover") {
+              return;
+            }
+
+            if (state.phase === "attack" && state.attacker === "player") {
+              playAttack("player", card.id);
+              render();
+              runAutoFlow();
+              return;
+            }
+
+            if (state.phase === "defense" && state.defender === "player") {
+              defend("player", card.id);
+              render();
+              runAutoFlow();
+              return;
+            }
+
+            if (state.phase === "throwin" && state.attacker === "player") {
+              throwInCard("player", card.id);
+              render();
+            }
+          });
+
+          ui.playerHand.appendChild(button);
+        }
+      }
+
+      function renderTable() {
+        ui.tableCards.innerHTML = "";
+        const cardTotal = state.table.reduce((sum, slot) => sum + 1 + (slot.defense ? 1 : 0), 0);
+        ui.tableCount.textContent = `${cardTotal} карт на столе`;
+
+        if (!state.table.length) {
+          const empty = document.createElement("div");
+          empty.className = "empty-battle";
+          empty.textContent = "Стол пуст. Первая атака определит ход партии.";
+          ui.tableCards.appendChild(empty);
+          return;
+        }
+
+        for (const slot of state.table) {
+          const wrapper = document.createElement("div");
+          wrapper.className = "table-slot";
+          wrapper.appendChild(createCardNode(slot.attack));
+          if (slot.defense) {
+            wrapper.appendChild(createCardNode(slot.defense));
+          }
+          ui.tableCards.appendChild(wrapper);
+        }
+      }
+
+      function renderStock() {
+        ui.deckCount.textContent = `Колода: ${state.deck.length}`;
+        ui.discardCount.textContent = `${state.discard.length} карт`;
+        ui.roundLimit.textContent = `До ${state.roundLimit} карт`;
+
+        ui.trumpCard.innerHTML = "";
+        if (state.trumpCard) {
+          ui.trumpCard.appendChild(createCardNode(state.trumpCard));
+        }
+        const trumpSuit = SUITS.find((suit) => suit.key === state.trumpSuit);
+        ui.trumpText.textContent = trumpSuit ? `${trumpSuit.symbol} ${trumpSuit.name}` : "-";
+      }
+
+      function renderCounts() {
+        ui.playerCount.textContent = `${state.playerHand.length} карт`;
+        ui.botCount.textContent = `${state.botHand.length} карт`;
+      }
+
+      function renderButtons() {
+        const playerCanTake = !state.processing && state.phase === "defense" && state.defender === "player";
+        const playerCanFinishAttack = !state.processing
+          && state.attacker === "player"
+          && state.phase === "attack"
+          && state.table.length > 0
+          && allDefended();
+        const playerCanFinishThrowIn = !state.processing
+          && state.attacker === "player"
+          && state.phase === "throwin";
+
+        ui.takeButton.disabled = !playerCanTake;
+        ui.doneButton.disabled = !(playerCanFinishAttack || playerCanFinishThrowIn);
+        ui.doneButton.textContent = playerCanFinishThrowIn ? "Закончить подкидывать" : "Бито";
+      }
+
+      function render() {
+        renderStatus();
+        renderRoles();
+        renderCounts();
+        renderStock();
+        renderBotHand();
+        renderPlayerHand();
+        renderTable();
+        renderButtons();
+        ui.actionLog.textContent = state.lastAction;
+      }
+
+      function startGame() {
+        state.deck = buildDeck();
+        shuffle(state.deck);
+        state.trumpCard = state.deck[state.deck.length - 1];
+        state.trumpSuit = state.trumpCard.suit;
+        state.playerHand = [];
+        state.botHand = [];
+        state.table = [];
+        state.discard = [];
+        state.processing = false;
+        state.winner = "";
+        state.lastAction = "Новая партия началась.";
+
+        for (let i = 0; i < 6; i += 1) {
+          drawToHand("player");
+          drawToHand("bot");
+        }
+
+        syncHands();
+        state.attacker = determineFirstAttacker();
+        state.defender = other(state.attacker);
+        state.phase = "attack";
+        setRoundLimit();
+        render();
+        runAutoFlow();
+      }
+
+      ui.takeButton.addEventListener("click", () => {
+        if (state.processing || state.phase !== "defense" || state.defender !== "player") {
+          return;
+        }
+        state.phase = "throwin";
+        state.lastAction = "Вы решили взять карты.";
+        render();
+        runAutoFlow();
+      });
+
+      ui.doneButton.addEventListener("click", () => {
+        if (state.processing) {
+          return;
+        }
+
+        if (state.attacker === "player" && state.phase === "attack" && state.table.length > 0 && allDefended()) {
+          finishSuccessfulDefense();
+          render();
+          runAutoFlow();
+          return;
+        }
+
+        if (state.attacker === "player" && state.phase === "throwin") {
+          finishTakeRound();
+          render();
+          runAutoFlow();
+        }
+      });
+
+      ui.restartButton.addEventListener("click", startGame);
+
+      startGame();
+    })();
+  </script>
+</body>
+</html>

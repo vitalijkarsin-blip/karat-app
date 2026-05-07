@@ -9,16 +9,24 @@
 
 #include "web_ui.h"
 
+#if defined(CONFIG_IDF_TARGET_ESP32C3) || defined(ARDUINO_ESP32C3_DEV) || defined(ARDUINO_LOLIN_C3_MINI)
+static const char *BOARD_NAME = "ESP32-C3";
+static const uint8_t PIN_PLUS = 3;   // button/switch +1 -> GND
+static const uint8_t PIN_RESET = 4;  // reset button -> GND
+static const uint8_t TM_CLK = 6;
+static const uint8_t TM_DIO = 7;
+#else
+static const char *BOARD_NAME = "ESP32";
 static const uint8_t PIN_PLUS = 18;   // button/switch +1 -> GND
 static const uint8_t PIN_RESET = 19;  // reset button -> GND
-
-static const uint8_t OLED_SDA = 21;
-static const uint8_t OLED_SCL = 22;
-static const uint8_t OLED_ADDR_1 = 0x3C;
-static const uint8_t OLED_ADDR_2 = 0x3D;
-
 static const uint8_t TM_CLK = 16;
 static const uint8_t TM_DIO = 17;
+#endif
+
+static const uint8_t OLED_SDA = SDA;
+static const uint8_t OLED_SCL = SCL;
+static const uint8_t OLED_ADDR_1 = 0x3C;
+static const uint8_t OLED_ADDR_2 = 0x3D;
 
 static const unsigned long DEBOUNCE_MS = 30;
 static const unsigned long ANTI_MULTICLICK_MS = 150;
@@ -134,6 +142,7 @@ static void initDisplays() {
   } else {
     Serial.println("OLED: not found");
   }
+  Serial.printf("I2C: SDA=%u SCL=%u\r\n", OLED_SDA, OLED_SCL);
   Serial.printf("TM1637: CLK=%u DIO=%u\r\n", TM_CLK, TM_DIO);
 }
 
@@ -286,6 +295,8 @@ void setup() {
   Serial.begin(115200);
   delay(250);
   Serial.println("Boot...");
+  Serial.printf("Board profile: %s\r\n", BOARD_NAME);
+  Serial.printf("Buttons: plus=%u reset=%u\r\n", PIN_PLUS, PIN_RESET);
 
   prefs.begin("pushup", false);
   countValue = prefs.getULong("count", 0);
